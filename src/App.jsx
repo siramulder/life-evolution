@@ -1,6 +1,5 @@
 
 function App() {
-
   return <h1>Life Evolution 🧬</h1>
 }
 

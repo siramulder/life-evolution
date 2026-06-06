@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase B1 (scales.js)
+> Last updated: after Phase B2 (upgrades.js)
 
 ---
 
@@ -50,10 +50,20 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
 
+**Phase B2 — upgrades.js**
+- `src/game/upgrades.js` — array of 3 upgrade objects
+- Fields: `id` (camelCase string), `name`, `type`, `effect` (display string), `increment` (number for math), `baseCost`, `costMultiplier`, `requireScale`
+- Amino Acids (aminoAcids): auto-generator, +0.2/sec, cost 10, ×1.15, scale 1
+- Cell Division (cellDivision): click-multiplier, +1/click, cost 50, ×1.3, scale 2
+- Photosynthesis (photosynthesis): auto-generator, +5/sec, cost 500, ×1.2, scale 3
+- **Design note**: `effect` (string for UI) vs `increment` (number for logic) kept separate — display decoupled from math
+- **Design note**: string ids used as keys (will map to ownership counts in gameState)
+- Cost formula: `baseCost × costMultiplier ^ owned` (2nd Amino Acids = 10 × 1.15¹ = 11.5)
+
 ### 🔜 Next up
 
-**Phase B2** — `src/game/upgrades.js` — define 3 upgrades (Amino Acids, Cell Division, Photosynthesis)
-**Phase B3** — `src/game/gameState.js` — initial state + gameReducer
+**Phase B3** — `src/game/gameState.js` — initial state + gameReducer (CLICK, BUY_UPGRADE, TICK, UNLOCK_SCALE)
+**Phase B4** — Wire `useReducer` in `App.jsx` + tick every 100ms
 
 ---
 
@@ -78,7 +88,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### Phase B: Core State
 - [x] B1 — `src/game/scales.js` — 3 scale definitions
-- [ ] B2 — `src/game/upgrades.js` — 3 upgrade definitions
+- [x] B2 — `src/game/upgrades.js` — 3 upgrade definitions
 - [ ] B3 — `src/game/gameState.js` — initial state + `gameReducer` (CLICK, BUY_UPGRADE, TICK, UNLOCK_SCALE)
 - [ ] B4 — Wire `useReducer` in `App.jsx` + `setInterval` tick every 100ms
 - [ ] B5 — Verify: biomass increments automatically each second
