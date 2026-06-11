@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase B2 (upgrades.js)
+> Last updated: after Phase B3 (gameState.js — initialState + gameReducer)
 
 ---
 
@@ -50,6 +50,17 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
 
+**Phase B3 — gameState.js**
+- `initialState`: biomass=0, perClick=1, perSec=0, currentScale=1, unlockedScales=[1], ownedUpgrades derived from upgrades.js
+- `ownedUpgrades` built with `Object.fromEntries(upgrades.map(...))` — stays in sync with upgrades.js automatically
+- `gameReducer(state, action)`: 4 cases — CLICK, TICK, BUY_UPGRADE, UNLOCK_SCALE
+- CLICK: `biomass + perClick`
+- TICK: `biomass + perSec/10` (fires every 100ms = 10×/sec)
+- BUY_UPGRADE: checks cost (`baseCost × multiplier^owned`), deducts biomass, updates perSec/perClick based on type, increments owned count
+- UNLOCK_SCALE: sets currentScale, pushes scaleId to unlockedScales
+- All cases use spread (`...state`) — never mutates state directly
+- Verified all 4 cases via console.log
+
 **Phase B2 — upgrades.js**
 - `src/game/upgrades.js` — array of 3 upgrade objects
 - Fields: `id` (camelCase string), `name`, `type`, `effect` (display string), `increment` (number for math), `baseCost`, `costMultiplier`, `requireScale`
@@ -62,8 +73,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🔜 Next up
 
-**Phase B3** — `src/game/gameState.js` — initial state + gameReducer (CLICK, BUY_UPGRADE, TICK, UNLOCK_SCALE)
-**Phase B4** — Wire `useReducer` in `App.jsx` + tick every 100ms
+**Phase B4** — Wire `useReducer` + `setInterval` tick (100ms) into `App.jsx`
+**Phase B5** — Verify biomass increments automatically each second
 
 ---
 
@@ -89,7 +100,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 ### Phase B: Core State
 - [x] B1 — `src/game/scales.js` — 3 scale definitions
 - [x] B2 — `src/game/upgrades.js` — 3 upgrade definitions
-- [ ] B3 — `src/game/gameState.js` — initial state + `gameReducer` (CLICK, BUY_UPGRADE, TICK, UNLOCK_SCALE)
+- [x] B3 — `src/game/gameState.js` — initial state + `gameReducer` (CLICK, BUY_UPGRADE, TICK, UNLOCK_SCALE)
 - [ ] B4 — Wire `useReducer` in `App.jsx` + `setInterval` tick every 100ms
 - [ ] B5 — Verify: biomass increments automatically each second
 
