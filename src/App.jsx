@@ -1,10 +1,25 @@
+import { useReducer, useEffect } from 'react'
 import { initialState, gameReducer } from './game/gameState'
 
-// เพิ่ม 2 บรรทัดนี้ชั่วคราว เพื่อให้ console เข้าถึงได้
-window.gameReducer = gameReducer
-window.initialState = initialState
-
 function App() {
+  const [state, dispatch] = useReducer(gameReducer, initialState)
+
+  // Passive income: fire TICK every 100ms (= 10x per second).
+  // Cleanup clears the interval when App unmounts — prevents a memory leak
+  // and double-ticking if React mounts the component twice (StrictMode).
+  useEffect(() => {
+    const interval = setInterval(() => {
+      dispatch({ type: 'TICK' })
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, []) // [] = run once on mount, never re-run
+
+  // Temporary: expose state + dispatch to browser console for verification.
+  // Remove after B4 is confirmed.
+  window.appState = state
+  window.appDispatch = dispatch
+
   return <h1>Life Evolution 🧬</h1>
 }
 

@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase B3 (gameState.js — initialState + gameReducer)
+> Last updated: after Phase B4 (useReducer + tick wired into App.jsx)
 
 ---
 
@@ -50,6 +50,14 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
 
+**Phase B4 — App.jsx wired up**
+- `useReducer(gameReducer, initialState)` → `[state, dispatch]`
+- `useEffect` with `setInterval(() => dispatch({ type: 'TICK' }), 100)` — fires 10×/sec
+- Cleanup function `return () => clearInterval(interval)` — prevents double-tick in StrictMode + memory leak
+- `[]` dependency array — effect runs once on mount only
+- `window.appState` / `window.appDispatch` exposed temporarily for console verification
+- Verified: CLICK dispatches correctly, BUY_UPGRADE deducts cost + updates perSec, TICK fires passively
+
 **Phase B3 — gameState.js**
 - `initialState`: biomass=0, perClick=1, perSec=0, currentScale=1, unlockedScales=[1], ownedUpgrades derived from upgrades.js
 - `ownedUpgrades` built with `Object.fromEntries(upgrades.map(...))` — stays in sync with upgrades.js automatically
@@ -73,8 +81,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🔜 Next up
 
-**Phase B4** — Wire `useReducer` + `setInterval` tick (100ms) into `App.jsx`
-**Phase B5** — Verify biomass increments automatically each second
+**Phase B5** — Verify biomass increments automatically (console test), then remove `window.appState/appDispatch` temp code
+**Phase C1** — Create `Universe.jsx` — clickable area, dispatches CLICK
 
 ---
 
@@ -101,7 +109,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - [x] B1 — `src/game/scales.js` — 3 scale definitions
 - [x] B2 — `src/game/upgrades.js` — 3 upgrade definitions
 - [x] B3 — `src/game/gameState.js` — initial state + `gameReducer` (CLICK, BUY_UPGRADE, TICK, UNLOCK_SCALE)
-- [ ] B4 — Wire `useReducer` in `App.jsx` + `setInterval` tick every 100ms
+- [x] B4 — Wire `useReducer` in `App.jsx` + `setInterval` tick every 100ms
 - [ ] B5 — Verify: biomass increments automatically each second
 
 ### Phase C: Click Mechanic
