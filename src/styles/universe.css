@@ -1,0 +1,32 @@
+/* Universe — full-screen clickable area for the primordial soup. */
+
+.universe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  align-items: center; /* vertical center */
+  justify-content: center; /* horizontal center */
+
+  cursor: pointer;
+  user-select: none; /* don't highlight the emoji on rapid clicks */
+
+  /* purple gradient — the primordial soup */
+  background: linear-gradient(135deg, #2e1065 0%, #6d28d9 100%);
+
+  transition: background 0.08s ease;
+}
+
+/* Brief flash on click — feedback that the click registered.
+   We change background (not transform: scale) because scaling a full-screen
+   element looks odd at the edges. */
+.universe:active {
+  background: linear-gradient(135deg, #3b1580 0%, #7c3aed 100%);
+}
+
+.universe-icon {
+  font-size: 6rem;
+}

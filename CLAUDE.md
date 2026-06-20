@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase B4 (useReducer + tick wired into App.jsx)
+> Last updated: after Phase C1 (Universe — full-screen clickable area)
 
 ---
 
@@ -50,6 +50,14 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
 
+**Phase C1 — Universe (full-screen clickable area)**
+- `src/components/Universe.jsx` — full-screen `<div>` with 🌊 center icon, takes `onClick` prop
+- `src/styles/universe.css` — 100vw × 100vh, position fixed, purple gradient, flex-center, `:active` flashes brighter (background change, not transform:scale — looks odd full-screen)
+- `App.jsx` — removed `<h1>`, renders `<Universe onClick={handleClick} />`, `handleClick = () => dispatch({ type: 'CLICK' })`
+- **Decision**: prop named `onClick` not `onClimbing` (assumed typo) — conventional React naming
+- **Note**: kept temp `window.state`/`window.dispatch` until C2 (Stats) shows biomass on screen — after h1 removed there's no visual readout
+- **Bug fixed earlier (B4/B5)**: App.jsx lost its `import` lines + `export default App` during an edit → white screen + "does not provide an export named 'default'". Lesson: every module needs imports at top + export at bottom. Hard-refresh after fixing a crash to clear stale HMR state.
+
 **Phase B4 — App.jsx wired up**
 - `useReducer(gameReducer, initialState)` → `[state, dispatch]`
 - `useEffect` with `setInterval(() => dispatch({ type: 'TICK' }), 100)` — fires 10×/sec
@@ -81,8 +89,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🔜 Next up
 
-**Phase B5** — Verify biomass increments automatically (console test), then remove `window.appState/appDispatch` temp code
-**Phase C1** — Create `Universe.jsx` — clickable area, dispatches CLICK
+**Phase C2** — `Stats.jsx` — show biomass + rate/sec on screen, then remove temp `window.state`/`window.dispatch`
+**Phase C3** — Click feedback (+1 floating animation at click point)
 
 ---
 
@@ -110,10 +118,10 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - [x] B2 — `src/game/upgrades.js` — 3 upgrade definitions
 - [x] B3 — `src/game/gameState.js` — initial state + `gameReducer` (CLICK, BUY_UPGRADE, TICK, UNLOCK_SCALE)
 - [x] B4 — Wire `useReducer` in `App.jsx` + `setInterval` tick every 100ms
-- [ ] B5 — Verify: biomass increments automatically each second
+- [x] B5 — Verify: biomass increments automatically each second (folded into C1 click test)
 
 ### Phase C: Click Mechanic
-- [ ] C1 — `src/components/Universe.jsx` — clickable area, dispatches CLICK
+- [x] C1 — `src/components/Universe.jsx` — clickable area, dispatches CLICK
 - [ ] C2 — `src/components/Stats.jsx` — shows biomass + rate/sec
 - [ ] C3 — Click feedback: floating `+1` text at click coordinates, CSS fade-up animation
 - [ ] C4 — Verify: clicking increments biomass, Stats updates in real-time
