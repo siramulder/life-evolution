@@ -1,0 +1,28 @@
+/* Stats — floating biomass + rate readout, centered near the top. */
+
+.stats {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%); /* true horizontal centering */
+  z-index: 10; /* float above the full-screen Universe */
+
+  text-align: center;
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); /* readable on the gradient */
+
+  /* Let clicks pass THROUGH to the Universe behind it.
+     Without this, clicking on/near the numbers wouldn't count. */
+  pointer-events: none;
+}
+
+.stats-biomass {
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.stats-rate {
+  font-size: 1.25rem;
+  opacity: 0.85;
+}

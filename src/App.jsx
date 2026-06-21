@@ -1,13 +1,10 @@
 import { useReducer, useEffect } from 'react'
 import { initialState, gameReducer } from './game/gameState'
 import { Universe } from './components/Universe'
+import { Stats } from './components/Stats'
 
 function App() {
   const [state, dispatch] = useReducer(gameReducer, initialState)
-
-  // Temp: expose for testing (removed once Stats shows biomass in C2)
-  window.state = state
-  window.dispatch = dispatch
 
   useEffect(() => {
     const interval = setInterval(() => dispatch({ type: 'TICK' }), 100)
@@ -16,7 +13,12 @@ function App() {
 
   const handleClick = () => dispatch({ type: 'CLICK' })
 
-  return <Universe onClick={handleClick} />
+  return (
+    <>
+      <Stats biomass={state.biomass} perSec={state.perSec} />
+      <Universe onClick={handleClick} />
+    </>
+  )
 }
 
 export default App
