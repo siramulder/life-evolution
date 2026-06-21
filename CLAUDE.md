@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase C1 (Universe — full-screen clickable area)
+> Last updated: after Phase C2 (Stats) + C1 revision (pulse circle)
 
 ---
 
@@ -50,9 +50,17 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
 
+**Phase C2 — Stats (biomass + rate readout)**
+- `src/components/Stats.jsx` — presentational component, takes `biomass` + `perSec` props, shows `biomass.toFixed(1)` big + `+perSec.toFixed(1)/sec` small
+- `src/styles/stats.css` — absolute top-center, white + text-shadow, z-index 10 (above Universe)
+- **Key**: `pointer-events: none` on `.stats` so clicks pass THROUGH to Universe behind (otherwise clicking on the numbers wouldn't count)
+- `App.jsx` — renders `<Stats>` above `<Universe>` in a fragment; removed temp `window.state`/`window.dispatch`
+- Confirms the earlier "biomass=0" mystery resolved: clicking now increments live on screen (clean browser after restart, no stale HMR)
+
 **Phase C1 — Universe (full-screen clickable area)**
-- `src/components/Universe.jsx` — full-screen `<div>` with 🌊 center icon, takes `onClick` prop
+- `src/components/Universe.jsx` — full-screen `<div>` with `onClick` prop; center content is `.pulse-circle` (was 🌊 emoji, swapped in C1 revision)
 - `src/styles/universe.css` — 100vw × 100vh, position fixed, purple gradient, flex-center, `:active` flashes brighter (background change, not transform:scale — looks odd full-screen)
+- **C1 revision**: replaced 🌊 emoji with `.pulse-circle` — 120px white translucent circle, `@keyframes pulse` (scale 1→1.15→1, opacity 0.6→1→0.6), `animation: pulse 2s ease-in-out infinite` (breathing effect). animate transform+opacity only (GPU-accelerated, no layout reflow)
 - `App.jsx` — removed `<h1>`, renders `<Universe onClick={handleClick} />`, `handleClick = () => dispatch({ type: 'CLICK' })`
 - **Decision**: prop named `onClick` not `onClimbing` (assumed typo) — conventional React naming
 - **Note**: kept temp `window.state`/`window.dispatch` until C2 (Stats) shows biomass on screen — after h1 removed there's no visual readout
@@ -89,8 +97,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🔜 Next up
 
-**Phase C2** — `Stats.jsx` — show biomass + rate/sec on screen, then remove temp `window.state`/`window.dispatch`
 **Phase C3** — Click feedback (+1 floating animation at click point)
+**Phase D** — Upgrade system (UpgradeList, buy logic, cost scaling)
 
 ---
 
@@ -122,7 +130,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### Phase C: Click Mechanic
 - [x] C1 — `src/components/Universe.jsx` — clickable area, dispatches CLICK
-- [ ] C2 — `src/components/Stats.jsx` — shows biomass + rate/sec
+- [x] C2 — `src/components/Stats.jsx` — shows biomass + rate/sec
 - [ ] C3 — Click feedback: floating `+1` text at click coordinates, CSS fade-up animation
 - [ ] C4 — Verify: clicking increments biomass, Stats updates in real-time
 

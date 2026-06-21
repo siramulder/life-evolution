@@ -5,7 +5,7 @@ import '../styles/universe.css'
 export function Universe({ onClick }) {
   return (
     <div className="universe" onClick={onClick}>
-      <span className="universe-icon">🌊</span>
+      <div className="pulse-circle"></div>
     </div>
   )
 }
