@@ -1,0 +1,28 @@
+/* Floating "+N" bubbles that rise from the click point and fade out. */
+
+.floating-number {
+  position: fixed;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.5rem;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+
+  pointer-events: none; /* never block a click */
+
+  /* The element is positioned by its top-left corner at (x, y).
+     Shift it so the bubble is centered on the cursor instead. */
+  transform: translate(-50%, -50%);
+
+  animation: floatUp 0.6s ease-out forwards; /* forwards = keep final frame (invisible) */
+}
+
+@keyframes floatUp {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(-50px);
+  }
+}

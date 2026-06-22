@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase C2 (Stats) + C1 revision (pulse circle)
+> Last updated: after Phase C3 (click feedback — floating +N bubbles)
 
 ---
 
@@ -50,6 +50,15 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
 
+**Phase C3 — Click feedback (floating +N bubbles)**
+- `App.jsx` — added `useState([])` for `floatingNumbers` (transient UI, separate from useReducer game state)
+- `handleClick(e)` — reads `e.clientX/clientY`, spawns bubble `{ id: Date.now()+Math.random(), x, y, value: perClick }`, `setTimeout(600ms)` removes it via `filter(b.id !== bubble.id)`
+- Renders bubbles with `.map()` + `key={b.id}`, positioned `style={{ left: x, top: y }}`
+- `Universe.jsx` — `onClick={(e) => onClick(e)}` forwards the event to App
+- `src/styles/floating.css` — `.floating-number` fixed position, `pointer-events: none`, `transform: translate(-50%,-50%)` centers bubble on cursor; `@keyframes floatUp` (opacity 1→0, translateY 0→-50px), `animation: floatUp 0.6s ease-out forwards`
+- **Design**: useState for bubbles (transient, simple add/remove) vs useReducer for biomass (core game state, complex actions) — don't mix transient UI into game state
+- **Why setTimeout cleanup**: animation only hides (opacity 0), div stays in DOM+array → without removal, list grows forever = memory leak + slowdown. `id` must be unique to filter correct bubble on rapid clicks
+
 **Phase C2 — Stats (biomass + rate readout)**
 - `src/components/Stats.jsx` — presentational component, takes `biomass` + `perSec` props, shows `biomass.toFixed(1)` big + `+perSec.toFixed(1)/sec` small
 - `src/styles/stats.css` — absolute top-center, white + text-shadow, z-index 10 (above Universe)
@@ -97,8 +106,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🔜 Next up
 
-**Phase C3** — Click feedback (+1 floating animation at click point)
-**Phase D** — Upgrade system (UpgradeList, buy logic, cost scaling)
+**Phase D** — Upgrade system: `upgrades.js` defs (done B2) → `UpgradeList.jsx` + buy logic + cost scaling + show only upgrades for current scale
+**Phase E** — Scale progression (unlock check, ScaleUnlockModal, visual change per scale)
 
 ---
 
@@ -131,8 +140,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 ### Phase C: Click Mechanic
 - [x] C1 — `src/components/Universe.jsx` — clickable area, dispatches CLICK
 - [x] C2 — `src/components/Stats.jsx` — shows biomass + rate/sec
-- [ ] C3 — Click feedback: floating `+1` text at click coordinates, CSS fade-up animation
-- [ ] C4 — Verify: clicking increments biomass, Stats updates in real-time
+- [x] C3 — Click feedback: floating `+1` text at click coordinates, CSS fade-up animation
+- [x] C4 — Verify: clicking increments biomass, Stats updates in real-time
 
 ### Phase D: Upgrade System
 - [ ] D1 — `src/components/UpgradeList.jsx` — upgrade cards (name / effect / cost / owned count)

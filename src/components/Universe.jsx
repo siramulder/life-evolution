@@ -4,7 +4,7 @@ import '../styles/universe.css'
 // which the parent (App) wires to dispatch a CLICK action.
 export function Universe({ onClick }) {
   return (
-    <div className="universe" onClick={onClick}>
+    <div className="universe" onClick={(e) => onClick(e)}>
       <div className="pulse-circle"></div>
     </div>
   )
