@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase D1 (UpgradeList — display-only cards)
+> Last updated: after font change (Exo 2 applied globally)
 
 ---
 
@@ -113,6 +113,11 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - **Design note**: `effect` (string for UI) vs `increment` (number for logic) kept separate — display decoupled from math
 - **Design note**: string ids used as keys (will map to ownership counts in gameState)
 - Cost formula: `baseCost × costMultiplier ^ owned` (2nd Amino Acids = 10 × 1.15¹ = 11.5)
+
+**Font — Exo 2**
+- `index.html` — added Google Fonts `<link>` for Exo 2 (weight 400 + 700)
+- `src/index.css` — `font-family: 'Exo 2', sans-serif` on `*` selector → applies globally
+- Choice: Exo 2 only (no font mixing) — clean and consistent throughout
 
 ### 🔜 Next up
 
