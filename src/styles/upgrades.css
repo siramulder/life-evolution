@@ -1,0 +1,46 @@
+/* UpgradeList — row of upgrade cards docked at the bottom of the screen. */
+
+.upgrade-list {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%); /* horizontal center */
+  z-index: 10; /* float above the Universe */
+
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+}
+
+.upgrade-card {
+  min-width: 150px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1); /* translucent glass */
+  color: #ffffff;
+  text-align: center;
+}
+
+.upgrade-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.upgrade-effect {
+  color: #4ade80; /* green — the benefit */
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+}
+
+.upgrade-cost {
+  color: #fbbf24; /* yellow — the price */
+  font-weight: 600;
+}
+
+.upgrade-owned {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin-top: 4px;
+}

@@ -2,6 +2,7 @@ import { useReducer, useEffect, useState } from 'react'
 import { initialState, gameReducer } from './game/gameState'
 import { Universe } from './components/Universe'
 import { Stats } from './components/Stats'
+import { UpgradeList } from './components/UpgradeList'
 import './styles/floating.css'
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
     <>
       <Stats biomass={state.biomass} perSec={state.perSec} />
       <Universe onClick={handleClick} />
+      <UpgradeList state={state} />
       {floatingNumbers.map((b) => (
         <div
           key={b.id}

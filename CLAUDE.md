@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase C3 (click feedback — floating +N bubbles)
+> Last updated: after Phase D1 (UpgradeList — display-only cards)
 
 ---
 
@@ -49,6 +49,16 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 2: Single Cell (threshold 100)
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
+
+**Phase D1 — UpgradeList (display-only cards)**
+- `src/components/UpgradeList.jsx` — takes `state` prop, `upgrades.map()` renders a card per upgrade
+- Each card: name / effect / `Cost: cost.toFixed(0)` / `Owned: owned`, `key={upgrade.id}`
+- `cost = baseCost × costMultiplier ^ owned` computed at render (derived state — NOT stored)
+- `src/styles/upgrades.css` — `.upgrade-list` fixed bottom-center, flex+gap, z-index 10; `.upgrade-card` translucent glass; effect green (#4ade80), cost yellow (#fbbf24)
+- `App.jsx` — renders `<UpgradeList state={state} />`
+- **Decision**: import `upgrades.css` inside UpgradeList.jsx (co-located, matches Stats/Universe pattern) not App.jsx
+- **Decision**: compute cost at render not in state — derived values shouldn't be duplicated in state (single source of truth = `owned`)
+- No buy buttons yet (D2); all 3 cards shown regardless of scale (filter in D5)
 
 **Phase C3 — Click feedback (floating +N bubbles)**
 - `App.jsx` — added `useState([])` for `floatingNumbers` (transient UI, separate from useReducer game state)
@@ -106,7 +116,9 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🔜 Next up
 
-**Phase D** — Upgrade system: `upgrades.js` defs (done B2) → `UpgradeList.jsx` + buy logic + cost scaling + show only upgrades for current scale
+**Phase D2** — Buy button per upgrade card (disabled if biomass < cost)
+**Phase D3** — BUY_UPGRADE wiring (dispatch on click) + verify cost scaling
+**Phase D5** — Show only upgrades unlocked at current scale
 **Phase E** — Scale progression (unlock check, ScaleUnlockModal, visual change per scale)
 
 ---
@@ -144,7 +156,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - [x] C4 — Verify: clicking increments biomass, Stats updates in real-time
 
 ### Phase D: Upgrade System
-- [ ] D1 — `src/components/UpgradeList.jsx` — upgrade cards (name / effect / cost / owned count)
+- [x] D1 — `src/components/UpgradeList.jsx` — upgrade cards (name / effect / cost / owned count)
 - [ ] D2 — Buy button per upgrade — disabled if biomass < cost
 - [ ] D3 — BUY_UPGRADE reducer: deduct biomass, increment owned, recalculate cost, update perSec/perClick
 - [ ] D4 — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5
