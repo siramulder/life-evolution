@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after font change (Exo 2 applied globally)
+> Last updated: after Phase D2/D3 (Buy button + BUY_UPGRADE wiring)
 
 ---
 
@@ -49,6 +49,13 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 2: Single Cell (threshold 100)
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
+
+**Phase D2 — Buy button (disabled when biomass < cost) + BUY_UPGRADE wiring**
+- `UpgradeList.jsx` — new `onBuy` prop; per card `canAfford = state.biomass >= cost`; added `<button>` with `onClick={() => onBuy(upgrade.id)}`, `disabled={!canAfford}`, class `buy-btn` / `buy-btn disabled`
+- `upgrades.css` — `.buy-btn` green (#22c55e, bold, radius 8, full-width); `:hover:not(:disabled)` darker (#16a34a); `:disabled` gray (#6b7280) + opacity 0.5 + cursor not-allowed
+- `App.jsx` — `handleBuyUpgrade(upgradeId)` dispatches `{ type: 'BUY_UPGRADE', payload: { upgradeId } }`; passed as `onBuy` to `<UpgradeList>` (D3 wiring folded in here — reducer logic already existed since B3)
+- **Two-layer affordability**: UI `disabled` = UX only (DOM attr, editable in DevTools, can lag behind perSec ticks). Real guard is `if (state.biomass < cost) return state` in `gameReducer` (single source of truth for the business rule). Both needed — UI for feedback, reducer for correctness.
+- D5 (filter upgrades by unlocked scale) still pending — all 3 cards still shown regardless of scale
 
 **Phase D1 — UpgradeList (display-only cards)**
 - `src/components/UpgradeList.jsx` — takes `state` prop, `upgrades.map()` renders a card per upgrade
@@ -121,9 +128,9 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🔜 Next up
 
-**Phase D2** — Buy button per upgrade card (disabled if biomass < cost)
-**Phase D3** — BUY_UPGRADE wiring (dispatch on click) + verify cost scaling
+**Phase D4** — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5 (awaiting user verify)
 **Phase D5** — Show only upgrades unlocked at current scale
+**Phase E** — Scale progression (unlock check, ScaleUnlockModal, visual change per scale)
 **Phase E** — Scale progression (unlock check, ScaleUnlockModal, visual change per scale)
 
 ---
@@ -162,8 +169,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### Phase D: Upgrade System
 - [x] D1 — `src/components/UpgradeList.jsx` — upgrade cards (name / effect / cost / owned count)
-- [ ] D2 — Buy button per upgrade — disabled if biomass < cost
-- [ ] D3 — BUY_UPGRADE reducer: deduct biomass, increment owned, recalculate cost, update perSec/perClick
+- [x] D2 — Buy button per upgrade — disabled if biomass < cost
+- [x] D3 — BUY_UPGRADE reducer: deduct biomass, increment owned, recalculate cost, update perSec/perClick (wired via App.handleBuyUpgrade; reducer logic from B3)
 - [ ] D4 — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5
 - [ ] D5 — Show upgrades only when their scale is unlocked
 

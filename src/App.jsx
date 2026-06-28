@@ -34,11 +34,17 @@ function App() {
     dispatch({ type: 'CLICK' })
   }
 
+  // Buy an upgrade. The reducer re-checks affordability before deducting,
+  // so this stays safe even if the button's disabled state lags behind.
+  const handleBuyUpgrade = (upgradeId) => {
+    dispatch({ type: 'BUY_UPGRADE', payload: { upgradeId } })
+  }
+
   return (
     <>
       <Stats biomass={state.biomass} perSec={state.perSec} />
       <Universe onClick={handleClick} />
-      <UpgradeList state={state} />
+      <UpgradeList state={state} onBuy={handleBuyUpgrade} />
       {floatingNumbers.map((b) => (
         <div
           key={b.id}

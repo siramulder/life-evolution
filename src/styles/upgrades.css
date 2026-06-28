@@ -44,3 +44,27 @@
   opacity: 0.75;
   margin-top: 4px;
 }
+
+.buy-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  border-radius: 8px;
+  background: #22c55e; /* green — affordable */
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.buy-btn:hover:not(:disabled) {
+  background: #16a34a; /* darker green on hover */
+}
+
+.buy-btn:disabled {
+  background: #6b7280; /* gray — can't afford */
+  opacity: 0.5;
+  cursor: not-allowed;
+}
