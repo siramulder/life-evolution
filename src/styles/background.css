@@ -1,0 +1,77 @@
+/* Background — ambient bubbles + drifting particles for the primordial soup.
+   Sits ABOVE the opaque Universe gradient (so it's visible) but is
+   pointer-events:none, so clicks fall straight through to the Universe below. */
+
+.background-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+
+  /* z-index 1: above the Universe gradient (z-index auto), below the
+     interactive overlays Stats + UpgradeList (z-index 10). */
+  z-index: 1;
+
+  pointer-events: none; /* never intercept a click */
+  overflow: hidden; /* clip bubbles that drift past the screen edges */
+}
+
+/* Bubbles — translucent circles that rise from below the screen to above it,
+   swaying left/right so the motion feels organic, not a straight line. */
+.bubble {
+  position: absolute;
+  bottom: -50px; /* start just below the viewport */
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06); /* barely-there fill */
+  pointer-events: none;
+
+  animation-name: riseUp;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes riseUp {
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-25vh) translateX(15px);
+  }
+  50% {
+    transform: translateY(-50vh) translateX(-15px);
+  }
+  75% {
+    transform: translateY(-75vh) translateX(10px);
+  }
+  100% {
+    transform: translateY(-110vh) translateX(0); /* fully past the top */
+  }
+}
+
+/* Particles — tiny pale-blue motes that hover in place, drifting a little and
+   fading as they go, like suspended matter in water. */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(173, 216, 230, 0.7); /* light blue */
+  pointer-events: none;
+
+  animation-name: drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: var(--base-opacity, 0.3);
+  }
+  50% {
+    transform: translate(10px, -15px);
+    /* fade to ~35% of this particle's base opacity at the midpoint */
+    opacity: calc(var(--base-opacity, 0.3) * 0.35);
+  }
+}

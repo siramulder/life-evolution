@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase D2/D3 (Buy button + BUY_UPGRADE wiring)
+> Last updated: after Background animation (bubbles + particles)
 
 ---
 
@@ -49,6 +49,15 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 2: Single Cell (threshold 100)
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
+
+**Background animation — bubbles + particles (primordial soup ambience)**
+- `src/components/Background.jsx` — 15 bubbles + 25 particles, configs built with `useMemo([])` (random size/left/duration/delay/opacity); renders divs with inline style pulling from config
+- `src/styles/background.css` — `.bubble` rises bottom→top via `@keyframes riseUp` (translateY -110vh + swaying translateX); `.particle` pale-blue mote drifting via `@keyframes drift` (translate + opacity fade); `.background-layer` fixed full-screen, `overflow:hidden`, `pointer-events:none`
+- `App.jsx` — `<Background />` rendered first (before Stats/Universe)
+- **useMemo is mandatory here**: App re-renders 10×/sec (TICK). Without `useMemo([])` the random configs regenerate every render → animations restart/jitter every 100ms, bubbles never finish rising. `useMemo([])` freezes the random values for the component's lifetime.
+- **Particle opacity via CSS var**: inline `--base-opacity` per particle + `drift` keyframe fades to `calc(var(--base-opacity) * 0.35)` at 50% → each mote fades relative to its own base opacity (can't be done with a plain shared keyframe)
+- ⚠️ **z-index deviation from naive spec**: `.universe` has an OPAQUE purple gradient filling the viewport. A `z-index:0` layer *behind* Universe (the literal brief) would be 100% hidden. Fix: `.background-layer` sits at `z-index:1` (ABOVE the gradient, BELOW Stats/UpgradeList at z-index 10) and is `pointer-events:none` → bubbles are visible over the soup, clicks still fall through to Universe (CLICK + `:active` flash both preserved). Did NOT move the gradient off Universe (would kill the click-flash).
+- **Final stacking**: Universe gradient (auto) → Background z-index 1 → Stats + UpgradeList z-index 10 → floating +N (last in DOM, always on top)
 
 **Phase D2 — Buy button (disabled when biomass < cost) + BUY_UPGRADE wiring**
 - `UpgradeList.jsx` — new `onBuy` prop; per card `canAfford = state.biomass >= cost`; added `<button>` with `onClick={() => onBuy(upgrade.id)}`, `disabled={!canAfford}`, class `buy-btn` / `buy-btn disabled`
@@ -243,6 +252,7 @@ life-evolution/
 │   ├── App.jsx
 │   ├── main.jsx
 │   ├── components/
+│   │   ├── Background.jsx       # ambient bubbles + particles (decorative)
 │   │   ├── Universe.jsx         # clickable main area
 │   │   ├── Stats.jsx            # biomass counter + rate/sec
 │   │   ├── UpgradeList.jsx      # upgrade cards + buy buttons
