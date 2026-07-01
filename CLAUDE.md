@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Background animation (bubbles + particles)
+> Last updated: after Background visibility tuning (brighter bubbles + particles)
 
 ---
 
@@ -49,6 +49,13 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 2: Single Cell (threshold 100)
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
+
+**Background visibility tuning — brighter bubbles + particles**
+- Complaint: bubbles/particles too faint on the purple gradient → hard to see
+- `Background.jsx` — bumped the random ranges: bubble opacity 0.1-0.3 → **0.25-0.5**; particle size 2-6 → **3-8px**, opacity 0.2-0.5 → **0.4-0.7**
+- `background.css` — bubble border 1px→**2px** + brighter `rgba(255,255,255,0.6)` + added `box-shadow: 0 0 8px rgba(255,255,255,0.3)` glow (reads as a real air bubble); particle color → brighter `rgba(200,230,255,0.9)`
+- ⚠️ **opacity/size RANGES live in `Background.jsx` (inline style via `rand()`), NOT in `background.css`** — inline style wins over CSS, so tuning visibility means editing the JS configs, not the stylesheet. CSS only controls the constant bits (border, glow, base color).
+- **Known trade-off surfaced (unresolved, user OK for now)**: because `.background-layer` is z-index 1 (ABOVE the opaque Universe gradient, required for visibility), and `.pulse-circle` is a *child* of Universe (z-index auto, below), **bubbles render IN FRONT of the pulse-circle**, not behind it. True "bubbles behind core" would need moving the gradient off Universe → transparent Universe → but that kills the `:active` click-flash. Left as-is since both layers are translucent (bubbles 0.25-0.5, core 0.3) so overlap just blends softly. If it ever bothers: move gradient to background layer + reimplement flash on the pulse-circle.
 
 **Background animation — bubbles + particles (primordial soup ambience)**
 - `src/components/Background.jsx` — 15 bubbles + 25 particles, configs built with `useMemo([])` (random size/left/duration/delay/opacity); renders divs with inline style pulling from config

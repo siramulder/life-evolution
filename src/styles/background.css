@@ -23,8 +23,9 @@
   position: absolute;
   bottom: -50px; /* start just below the viewport */
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.06); /* barely-there fill */
+  border: 2px solid rgba(255, 255, 255, 0.6); /* thicker + brighter rim */
+  background: rgba(255, 255, 255, 0.08); /* faint fill */
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3); /* soft glow — reads as a real air bubble */
   pointer-events: none;
 
   animation-name: riseUp;
@@ -55,7 +56,7 @@
 .particle {
   position: absolute;
   border-radius: 50%;
-  background: rgba(173, 216, 230, 0.7); /* light blue */
+  background: rgba(200, 230, 255, 0.9); /* brighter pale blue — stands out on purple */
   pointer-events: none;
 
   animation-name: drift;

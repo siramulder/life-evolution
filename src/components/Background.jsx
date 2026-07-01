@@ -18,7 +18,7 @@ export function Background() {
         left: rand(0, 100), // %
         duration: rand(8, 20), // s
         delay: rand(0, 10), // s
-        opacity: rand(0.1, 0.3),
+        opacity: rand(0.25, 0.5), // was 0.1-0.3 — raised for visibility on purple
       })),
     [],
   )
@@ -27,12 +27,12 @@ export function Background() {
     () =>
       Array.from({ length: 25 }, (_, i) => ({
         id: i,
-        size: rand(2, 6), // px
+        size: rand(3, 8), // px — was 2-6, bumped up
         left: rand(0, 100), // %
         top: rand(0, 100), // %
         duration: rand(4, 10), // s
         delay: rand(0, 8), // s
-        opacity: rand(0.2, 0.5),
+        opacity: rand(0.4, 0.7), // was 0.2-0.5 — raised for contrast
       })),
     [],
   )
