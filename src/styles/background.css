@@ -9,9 +9,18 @@
   width: 100vw;
   height: 100vh;
 
-  /* z-index 1: above the Universe gradient (z-index auto), below the
-     interactive overlays Stats + UpgradeList (z-index 10). */
-  z-index: 1;
+  /* The primordial-soup gradient lives HERE now (moved off .universe) so this
+     layer can sit at the very back. That lets bubbles/particles render BEHIND
+     the pulse-circle (which is a child of the transparent Universe above). */
+  background: linear-gradient(135deg, #2e1065 0%, #6d28d9 100%);
+
+  /* z-index -1: truly behind the (now transparent) Universe. Must be NEGATIVE,
+     not 0 — in CSS paint order a positioned z-index:0 element paints ABOVE a
+     z-index:auto one, so 0 would put bubbles back in front of Universe. -1 puts
+     this whole layer behind Universe + its pulse-circle, while the floating +N
+     (z-index auto, rendered after Universe) still stays on top. Body is
+     transparent so the gradient here shows through fine. */
+  z-index: -1;
 
   pointer-events: none; /* never intercept a click */
   overflow: hidden; /* clip bubbles that drift past the screen edges */

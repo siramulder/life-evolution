@@ -14,17 +14,19 @@
   cursor: pointer;
   user-select: none; /* don't highlight the emoji on rapid clicks */
 
-  /* purple gradient — the primordial soup */
-  background: linear-gradient(135deg, #2e1065 0%, #6d28d9 100%);
+  /* Transparent — the purple soup gradient now lives on .background-layer
+     BEHIND this element, so bubbles/particles show through and sit behind the
+     pulse-circle (a child of this Universe). */
+  background: transparent;
 
   transition: background 0.08s ease;
 }
 
-/* Brief flash on click — feedback that the click registered.
-   We change background (not transform: scale) because scaling a full-screen
-   element looks odd at the edges. */
+/* Brief flash on click — feedback that the click registered. Universe is
+   transparent now, so we flash a faint white veil over the whole screen
+   instead of shifting the gradient (which moved to the background layer). */
 .universe:active {
-  background: linear-gradient(135deg, #3b1580 0%, #7c3aed 100%);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* The pulsing core — a soft white circle that breathes in and out,

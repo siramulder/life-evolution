@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Background visibility tuning (brighter bubbles + particles)
+> Last updated: after Background/Universe z-index restructure (bubbles now behind pulse-circle)
 
 ---
 
@@ -50,12 +50,20 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
 
+**Background/Universe z-index restructure — bubbles now behind pulse-circle**
+- Resolves the trade-off noted below (Background visibility tuning) — user wanted bubbles/particles visually BEHIND the pulse-circle, not in front of it
+- `background.css` — the purple soup gradient MOVED here from `.universe` (`linear-gradient(135deg, #2e1065 0%, #6d28d9 100%)`); `.background-layer` z-index changed **1 → -1**
+- `universe.css` — `.universe` background changed to `transparent` (gradient no longer lives here); `.universe:active` flash changed from a darker-purple gradient shift to `rgba(255, 255, 255, 0.08)` (a faint white veil) since there's no gradient left on this element to shift
+- ⚠️ **z-index must be `-1`, not `0`**: in CSS paint order a positioned `z-index: 0` element paints ABOVE a `z-index: auto` sibling — so `0` would NOT have pushed the background behind Universe (auto). Only a negative value does. Don't repeat the `0` mistake if touching this stack again.
+- **New final stacking**: Background (gradient + bubbles + particles) z-index **-1** → Universe (transparent, catches clicks, hosts pulse-circle) z-index auto → floating +N (DOM-order, auto) → Stats/UpgradeList z-index 10
+- Click mechanic fully preserved: Universe still transparent-but-clickable, CLICK dispatch unaffected, flash still fires on `:active` (just a different visual)
+
 **Background visibility tuning — brighter bubbles + particles**
 - Complaint: bubbles/particles too faint on the purple gradient → hard to see
 - `Background.jsx` — bumped the random ranges: bubble opacity 0.1-0.3 → **0.25-0.5**; particle size 2-6 → **3-8px**, opacity 0.2-0.5 → **0.4-0.7**
 - `background.css` — bubble border 1px→**2px** + brighter `rgba(255,255,255,0.6)` + added `box-shadow: 0 0 8px rgba(255,255,255,0.3)` glow (reads as a real air bubble); particle color → brighter `rgba(200,230,255,0.9)`
 - ⚠️ **opacity/size RANGES live in `Background.jsx` (inline style via `rand()`), NOT in `background.css`** — inline style wins over CSS, so tuning visibility means editing the JS configs, not the stylesheet. CSS only controls the constant bits (border, glow, base color).
-- **Known trade-off surfaced (unresolved, user OK for now)**: because `.background-layer` is z-index 1 (ABOVE the opaque Universe gradient, required for visibility), and `.pulse-circle` is a *child* of Universe (z-index auto, below), **bubbles render IN FRONT of the pulse-circle**, not behind it. True "bubbles behind core" would need moving the gradient off Universe → transparent Universe → but that kills the `:active` click-flash. Left as-is since both layers are translucent (bubbles 0.25-0.5, core 0.3) so overlap just blends softly. If it ever bothers: move gradient to background layer + reimplement flash on the pulse-circle.
+- ~~Known trade-off surfaced (unresolved, user OK for now): bubbles render IN FRONT of the pulse-circle~~ — **RESOLVED**, see "Background/Universe z-index restructure" entry above (gradient moved off Universe, background z-index flipped to -1, click-flash reimplemented as a white veil)
 
 **Background animation — bubbles + particles (primordial soup ambience)**
 - `src/components/Background.jsx` — 15 bubbles + 25 particles, configs built with `useMemo([])` (random size/left/duration/delay/opacity); renders divs with inline style pulling from config
@@ -63,8 +71,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `App.jsx` — `<Background />` rendered first (before Stats/Universe)
 - **useMemo is mandatory here**: App re-renders 10×/sec (TICK). Without `useMemo([])` the random configs regenerate every render → animations restart/jitter every 100ms, bubbles never finish rising. `useMemo([])` freezes the random values for the component's lifetime.
 - **Particle opacity via CSS var**: inline `--base-opacity` per particle + `drift` keyframe fades to `calc(var(--base-opacity) * 0.35)` at 50% → each mote fades relative to its own base opacity (can't be done with a plain shared keyframe)
-- ⚠️ **z-index deviation from naive spec**: `.universe` has an OPAQUE purple gradient filling the viewport. A `z-index:0` layer *behind* Universe (the literal brief) would be 100% hidden. Fix: `.background-layer` sits at `z-index:1` (ABOVE the gradient, BELOW Stats/UpgradeList at z-index 10) and is `pointer-events:none` → bubbles are visible over the soup, clicks still fall through to Universe (CLICK + `:active` flash both preserved). Did NOT move the gradient off Universe (would kill the click-flash).
-- **Final stacking**: Universe gradient (auto) → Background z-index 1 → Stats + UpgradeList z-index 10 → floating +N (last in DOM, always on top)
+- ⚠️ **z-index deviation from naive spec (original approach, later superseded)**: `.universe` originally had an OPAQUE purple gradient filling the viewport, so `.background-layer` was first placed at `z-index:1` (above the gradient) just to be visible at all. This was later superseded — see "Background/Universe z-index restructure" entry above, which moved the gradient off Universe entirely and flipped background to `z-index:-1` so bubbles sit behind the pulse-circle.
+- **Stacking at the time (now superseded — see restructure entry above for current order)**: Universe gradient (auto) → Background z-index 1 → Stats + UpgradeList z-index 10 → floating +N (last in DOM, always on top)
 
 **Phase D2 — Buy button (disabled when biomass < cost) + BUY_UPGRADE wiring**
 - `UpgradeList.jsx` — new `onBuy` prop; per card `canAfford = state.biomass >= cost`; added `<button>` with `onClick={() => onBuy(upgrade.id)}`, `disabled={!canAfford}`, class `buy-btn` / `buy-btn disabled`
