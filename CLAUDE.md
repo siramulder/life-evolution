@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Background/Universe z-index restructure (bubbles now behind pulse-circle)
+> Last updated: after Phase D5 (upgrades filtered by unlocked scale)
 
 ---
 
@@ -49,6 +49,13 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 2: Single Cell (threshold 100)
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
+
+**Phase D5 — upgrades filtered by unlocked scale**
+- `UpgradeList.jsx` — before `.map()`, filter: `const unlocked = upgrades.filter((u) => u.requireScale <= state.currentScale)`; map over `unlocked` instead of `upgrades`. Card/button/cost internals unchanged.
+- **filter-before-map** (not `return null` inside map): keeps the "which items show" rule (business logic) separate from "how they render" (presentation); avoids the `key`-on-null hassle and wasted loop passes
+- At `currentScale: 1` (initial) → only Amino Acids shows (requireScale 1); Cell Division (2) + Photosynthesis (3) hidden until their scale unlocks
+- Verify note: no auto-unlock yet (that's Phase E) → to test scale 2/3 cards, temporarily set `currentScale` in `gameState.js` initialState, then revert to 1
+- Completes Phase D. Next: Phase E (auto-unlock check in TICK + ScaleUnlockModal + per-scale visual)
 
 **Background/Universe z-index restructure — bubbles now behind pulse-circle**
 - Resolves the trade-off noted below (Background visibility tuning) — user wanted bubbles/particles visually BEHIND the pulse-circle, not in front of it
@@ -153,9 +160,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 ### 🔜 Next up
 
 **Phase D4** — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5 (awaiting user verify)
-**Phase D5** — Show only upgrades unlocked at current scale
-**Phase E** — Scale progression (unlock check, ScaleUnlockModal, visual change per scale)
-**Phase E** — Scale progression (unlock check, ScaleUnlockModal, visual change per scale)
+**Phase E** — Scale progression (unlock check in TICK, ScaleUnlockModal, visual change per scale)
 
 ---
 
@@ -196,7 +201,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - [x] D2 — Buy button per upgrade — disabled if biomass < cost
 - [x] D3 — BUY_UPGRADE reducer: deduct biomass, increment owned, recalculate cost, update perSec/perClick (wired via App.handleBuyUpgrade; reducer logic from B3)
 - [ ] D4 — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5
-- [ ] D5 — Show upgrades only when their scale is unlocked
+- [x] D5 — Show upgrades only when their scale is unlocked (filter `requireScale <= currentScale` before map)
 
 ### Phase E: Scale Progression
 - [ ] E1 — Unlock check inside TICK: biomass ≥ threshold → dispatch UNLOCK_SCALE
