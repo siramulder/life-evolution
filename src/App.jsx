@@ -1,6 +1,7 @@
 import { useReducer, useEffect, useState } from 'react'
 import { initialState, gameReducer } from './game/gameState'
 import { Background } from './components/Background'
+import { AminoAcids } from './components/AminoAcids'
 import { Universe } from './components/Universe'
 import { Stats } from './components/Stats'
 import { UpgradeList } from './components/UpgradeList'
@@ -44,6 +45,7 @@ function App() {
   return (
     <>
       <Background />
+      <AminoAcids count={state.ownedUpgrades.aminoAcids} />
       <Stats biomass={state.biomass} perSec={state.perSec} />
       <Universe onClick={handleClick} />
       <UpgradeList state={state} onBuy={handleBuyUpgrade} />

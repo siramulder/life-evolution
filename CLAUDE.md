@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase D5 (upgrades filtered by unlocked scale)
+> Last updated: after Amino Acid molecules (floating, count = owned)
 
 ---
 
@@ -49,6 +49,15 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 2: Single Cell (threshold 100)
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
+
+**Amino Acid molecules — floating visual, one per owned Amino Acids upgrade**
+- `src/components/AminoAcids.jsx` — takes `count` prop; renders `count` green molecules drifting via `@keyframes floatAround`
+- `src/styles/aminoacids.css` — `.amino-molecule` light-green translucent sphere + glow + 2 satellite atoms (`::before`/`::after`); `.amino-layer` fixed full-screen, `z-index:-1`, `pointer-events:none`, `overflow:hidden`
+- `App.jsx` — `<AminoAcids count={state.ownedUpgrades.aminoAcids} />` rendered between `<Background />` and `<Stats>` (so DOM-after Background)
+- **No new state**: molecule count is DERIVED from `state.ownedUpgrades.aminoAcids` (already maintained by BUY_UPGRADE). Passed as a prop — never duplicated into a separate `useState`, which would risk drifting out of sync. Single source of truth.
+- ⚠️ **useMemo([count]) alone is NOT enough — needs DETERMINISTIC seeding**: `useMemo(() => Array.from({length: count}, () => rand()), [count])` rebuilds the WHOLE array when count grows → with `Math.random()` inside, the existing molecules re-randomize and TELEPORT. Fix: seed each molecule's position from its `id` (`pick(seed) = sin(seed) fractional`), so id N always yields the same config. On rebuild, ids 0..n-1 reproduce identical configs → React sees no style change → their running animation continues → only the new id appears. `key={m.id}` lets React match the existing DOM nodes.
+- **z-index**: `.amino-layer` z-index -1 (same band as Background) but rendered AFTER Background in DOM → molecules paint above the bubbles yet behind the transparent Universe + pulse-circle. Layer is pointer-events:none so clicks still pass through.
+- Not part of the PRD slice plan — extra visual-feedback feature requested ad hoc
 
 **Phase D5 — upgrades filtered by unlocked scale**
 - `UpgradeList.jsx` — before `.map()`, filter: `const unlocked = upgrades.filter((u) => u.requireScale <= state.currentScale)`; map over `unlocked` instead of `upgrades`. Card/button/cost internals unchanged.
@@ -273,6 +282,7 @@ life-evolution/
 │   ├── main.jsx
 │   ├── components/
 │   │   ├── Background.jsx       # ambient bubbles + particles (decorative)
+│   │   ├── AminoAcids.jsx       # floating molecules, count = owned Amino Acids
 │   │   ├── Universe.jsx         # clickable main area
 │   │   ├── Stats.jsx            # biomass counter + rate/sec
 │   │   ├── UpgradeList.jsx      # upgrade cards + buy buttons
