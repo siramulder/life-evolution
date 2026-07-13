@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Amino Acid molecules (floating, count = owned)
+> Last updated: after Phase E1 (auto-unlock on TICK)
 
 ---
 
@@ -49,6 +49,16 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 2: Single Cell (threshold 100)
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
+
+**Phase E1 — auto-unlock check in TICK (dispatch UNLOCK_SCALE when threshold reached)**
+- `gameState.js` — added `import { scales }` to access threshold values (not hardcode 100/1000)
+- TICK case: compute `newBiomass`, then check if `scales.find(s => s.id === currentScale + 1)` exists and `newBiomass >= nextScale.threshold`
+- If yes → return new state with `currentScale` updated to `nextScale.id`, and `unlockedScales` appended (guard duplicate with `.includes()` check)
+- If no → return new state with just the new biomass
+- **Single source of truth**: threshold lives in `scales.js` only — reducer reads from there, not hardcoded. If balance changes, edit scales.js once.
+- **Check one scale ahead only** (currentScale + 1): biomass grows in tiny steps (perSec/10 per tick), can't leap past 2 scales in a tick. Next-scale-only is fast + correct + future-proof (easy to add scale 4-6).
+- **Result**: Amino Acids card (Cell Division, Photosynthesis) auto-appear when threshold hit, no manual unlock needed. currentScale + unlockedScales stay in sync via the reducer.
+- Phase E2 (ScaleUnlockModal) will wire up the visual "congratulations" popup on unlock
 
 **Amino Acid molecules — floating visual, one per owned Amino Acids upgrade**
 - `src/components/AminoAcids.jsx` — takes `count` prop; renders `count` green molecules drifting via `@keyframes floatAround`
@@ -169,7 +179,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 ### 🔜 Next up
 
 **Phase D4** — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5 (awaiting user verify)
-**Phase E** — Scale progression (unlock check in TICK, ScaleUnlockModal, visual change per scale)
+**Phase E2** — ScaleUnlockModal (popup on unlock)
+**Phase E3** — Universe visual changes per scale (color / label)
 
 ---
 
@@ -213,7 +224,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - [x] D5 — Show upgrades only when their scale is unlocked (filter `requireScale <= currentScale` before map)
 
 ### Phase E: Scale Progression
-- [ ] E1 — Unlock check inside TICK: biomass ≥ threshold → dispatch UNLOCK_SCALE
+- [x] E1 — Unlock check inside TICK: biomass ≥ threshold → auto-dispatch UNLOCK_SCALE (reads threshold from scales.js, checks currentScale+1 only)
 - [ ] E2 — `src/components/ScaleUnlockModal.jsx` — modal with scale name + flavor text + dismiss button
 - [ ] E3 — `Universe.jsx` visual changes per scale (color / label)
 - [ ] E4 — Verify Scale 2: 100 biomass → modal, visual changes, Cell Division available

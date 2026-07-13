@@ -3,6 +3,7 @@
 // MVP 1.0 has no save/load).
 
 import { upgrades } from './upgrades'
+import { scales } from './scales'
 
 // Ownership count for every upgrade, all starting at 0.
 // Derived from upgrades.js so the keys never drift out of sync:
@@ -32,11 +33,32 @@ export function gameReducer(state, action) {
       }
 
     // Passive tick (fires every 100ms = 10×/sec), so add 1/10th of perSec.
-    case 'TICK':
+    case 'TICK': {
+      const newBiomass = state.biomass + state.perSec / 10
+
+      // Auto-unlock check: has biomass reached the NEXT scale's threshold?
+      // Only ever look one scale ahead (currentScale + 1): biomass grows in tiny
+      // steps, so it can't leap past two scales in a single 100ms tick.
+      const nextScale = scales.find((s) => s.id === state.currentScale + 1)
+
+      if (nextScale && newBiomass >= nextScale.threshold) {
+        return {
+          ...state,
+          biomass: newBiomass,
+          currentScale: nextScale.id,
+          // Guard against duplicates in case a tick ever re-checks the same scale.
+          unlockedScales: state.unlockedScales.includes(nextScale.id)
+            ? state.unlockedScales
+            : [...state.unlockedScales, nextScale.id],
+        }
+      }
+
+      // No unlock this tick — just add the biomass.
       return {
         ...state,
-        biomass: state.biomass + state.perSec / 10,
+        biomass: newBiomass,
       }
+    }
 
     // Buy one unit of an upgrade, if the player can afford it.
     case 'BUY_UPGRADE': {
