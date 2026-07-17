@@ -25,7 +25,11 @@ export function AminoAcids({ count }) {
         startX: pick(i * 12.99 + 1, 10, 90), // % of viewport
         startY: pick(i * 78.23 + 2, 10, 90), // %
         duration: pick(i * 37.71 + 3, 15, 30), // s
-        delay: pick(i * 4.27 + 4, 0, 5), // s
+        // NEGATIVE delay: starts the animation already partway through, so the
+        // molecule is moving from frame 0 (no static pause). A positive delay
+        // would park it still until the delay elapsed. Spread across 0..-30s so
+        // each molecule sits at a different phase (they don't drift in sync).
+        delay: -pick(i * 4.27 + 4, 0, 30), // s
         size: pick(i * 93.98 + 5, 20, 35), // px
       })),
     [count],

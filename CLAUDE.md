@@ -61,7 +61,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Phase E2 (ScaleUnlockModal) will wire up the visual "congratulations" popup on unlock
 
 **Amino Acid molecules — floating visual, one per owned Amino Acids upgrade**
-- `src/components/AminoAcids.jsx` — takes `count` prop; renders `count` green molecules drifting via `@keyframes floatAround`
+- `src/components/AminoAcids.jsx` — takes `count` prop; renders `count` green molecules drifting via `@keyframes floatAround`; uses **negative animation-delay** (`0..-30s`) so molecules start moving immediately on spawn (not a static pause) — each molecule phases into animation at a different point, creating visual spread without sync drift
 - `src/styles/aminoacids.css` — `.amino-molecule` light-green translucent sphere + glow + 2 satellite atoms (`::before`/`::after`); `.amino-layer` fixed full-screen, `z-index:-1`, `pointer-events:none`, `overflow:hidden`
 - `App.jsx` — `<AminoAcids count={state.ownedUpgrades.aminoAcids} />` rendered between `<Background />` and `<Stats>` (so DOM-after Background)
 - **No new state**: molecule count is DERIVED from `state.ownedUpgrades.aminoAcids` (already maintained by BUY_UPGRADE). Passed as a prop — never duplicated into a separate `useState`, which would risk drifting out of sync. Single source of truth.
