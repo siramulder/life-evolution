@@ -18,6 +18,7 @@ export const initialState = {
   currentScale: 1, // the scale the player is currently at (1–3)
   unlockedScales: [1], // scales reached so far; starts with Primordial Soup
   ownedUpgrades, // how many of each upgrade the player owns
+  pendingModalScale: null, // scale id awaiting a celebration modal (null = none)
 }
 
 // gameReducer — the ONLY place game state changes.
@@ -50,6 +51,10 @@ export function gameReducer(state, action) {
           unlockedScales: state.unlockedScales.includes(nextScale.id)
             ? state.unlockedScales
             : [...state.unlockedScales, nextScale.id],
+          // Flag this scale for the celebration modal. TICK is the moment the
+          // unlock happens, so it's the right place to raise the flag. Cleared
+          // by DISMISS_MODAL; the includes-guard above means this fires once.
+          pendingModalScale: nextScale.id,
         }
       }
 
@@ -103,6 +108,14 @@ export function gameReducer(state, action) {
         unlockedScales: [...state.unlockedScales, scaleId],
       }
     }
+
+    // Player closed the scale-unlock celebration modal — clear the flag.
+    // TICK won't re-raise it: the same scale is already in unlockedScales.
+    case 'DISMISS_MODAL':
+      return {
+        ...state,
+        pendingModalScale: null,
+      }
 
     // Unknown action: return state untouched.
     default:

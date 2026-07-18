@@ -1,10 +1,12 @@
 import { useReducer, useEffect, useState } from 'react'
 import { initialState, gameReducer } from './game/gameState'
+import { scales } from './game/scales'
 import { Background } from './components/Background'
 import { AminoAcids } from './components/AminoAcids'
 import { Universe } from './components/Universe'
 import { Stats } from './components/Stats'
 import { UpgradeList } from './components/UpgradeList'
+import { ScaleUnlockModal } from './components/ScaleUnlockModal'
 import './styles/floating.css'
 
 function App() {
@@ -42,6 +44,12 @@ function App() {
     dispatch({ type: 'BUY_UPGRADE', payload: { upgradeId } })
   }
 
+  // Resolve the pending scale id (set by TICK on unlock) to its scale object.
+  // null when no modal is due → ScaleUnlockModal renders nothing.
+  const modalScale = state.pendingModalScale
+    ? scales.find((s) => s.id === state.pendingModalScale)
+    : null
+
   return (
     <>
       <Background />
@@ -58,6 +66,10 @@ function App() {
           +{b.value}
         </div>
       ))}
+      <ScaleUnlockModal
+        scale={modalScale}
+        onDismiss={() => dispatch({ type: 'DISMISS_MODAL' })}
+      />
     </>
   )
 }

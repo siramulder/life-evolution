@@ -1,0 +1,79 @@
+/* ScaleUnlockModal — full-screen dim overlay + centered glass card. */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7); /* dim the game behind */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 100; /* above everything else (Stats/UpgradeList are z-index 10) */
+}
+
+/* Glass card — same translucent look as the upgrade cards, scaled up. */
+.modal-content {
+  max-width: 400px;
+  padding: 32px 40px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  text-align: center;
+
+  animation: modalPop 0.3s ease-out; /* pop in on mount */
+}
+
+.modal-title {
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #4ade80; /* green — celebratory */
+  margin-bottom: 12px;
+}
+
+.modal-scale-name {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.modal-scale-desc {
+  font-size: 1rem;
+  line-height: 1.5;
+  opacity: 0.85;
+  margin-bottom: 28px;
+}
+
+/* Continue button — same green style as the upgrade Buy buttons. */
+.modal-continue {
+  padding: 10px 32px;
+  border: none;
+  border-radius: 8px;
+  background: #22c55e;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.modal-continue:hover {
+  background: #16a34a;
+}
+
+/* Pop-in: grow from slightly small + transparent to full size. */
+@keyframes modalPop {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

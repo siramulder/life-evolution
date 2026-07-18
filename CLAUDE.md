@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase E1 (auto-unlock on TICK)
+> Last updated: after Phase E2 (ScaleUnlockModal popup on unlock)
 
 ---
 
@@ -49,6 +49,15 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Scale 2: Single Cell (threshold 100)
 - Scale 3: Multicellular Life (threshold 1000)
 - Verified via `console.log(scales)` in browser console — array of 3 objects confirmed
+
+**Phase E2 — ScaleUnlockModal (celebration popup on unlock, guards against re-trigger)**
+- `gameState.js` — added `pendingModalScale: null` field to initialState; TICK unlock branch now also sets `pendingModalScale: nextScale.id`; new case `'DISMISS_MODAL'` clears it back to null
+- `ScaleUnlockModal.jsx` — takes `scale` object + `onDismiss()` callback; renders nothing if `scale` is null (no modal to show); displays modal-overlay (dark dim) + glass card with scale name + flavor text + green Continue button
+- `styles/modal.css` — `.modal-overlay` z-index 100 (above Stats/UpgradeList at 10), full-screen dim, flexbox center; `.modal-content` glass card (translucent); `.modal-continue` button green (#22c55e, darker on hover); `@keyframes modalPop` scale 0.8→1 + opacity 0→1 (0.3s ease-out pop-in)
+- `App.jsx` — import scales + ScaleUnlockModal; derive `modalScale` by finding scale object from `pendingModalScale` id (null if no pending); render ScaleUnlockModal at the end (after UpgradeList + floating +N) so it renders on top
+- **No re-trigger after dismiss**: (1) `DISMISS_MODAL` clears `pendingModalScale → null` (modal gone from render), (2) TICK won't re-set the flag because `currentScale` has advanced past the just-unlocked scale → TICK looks for `currentScale + 1` (the *next* scale), not the one that just unlocked (already in `unlockedScales` with includes guard)
+- **Reducer state vs useState**: storing `pendingModalScale` in game state (not useState + useEffect) is cleaner because TICK *knows* the unlock happened (it caused it) — let it flag the modal directly, atomic with `currentScale` change. Effect-based "detect currentScale changed" adds coupling, state drift risk, and unnecessary re-detection logic.
+- Single celebration popup per scale, gates behind Continue button
 
 **Phase E1 — auto-unlock check in TICK (dispatch UNLOCK_SCALE when threshold reached)**
 - `gameState.js` — added `import { scales }` to access threshold values (not hardcode 100/1000)
@@ -179,8 +188,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 ### 🔜 Next up
 
 **Phase D4** — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5 (awaiting user verify)
-**Phase E2** — ScaleUnlockModal (popup on unlock)
 **Phase E3** — Universe visual changes per scale (color / label)
+**Phase F** — End-to-end playtest 0 → Scale 3
 
 ---
 
@@ -225,7 +234,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### Phase E: Scale Progression
 - [x] E1 — Unlock check inside TICK: biomass ≥ threshold → auto-dispatch UNLOCK_SCALE (reads threshold from scales.js, checks currentScale+1 only)
-- [ ] E2 — `src/components/ScaleUnlockModal.jsx` — modal with scale name + flavor text + dismiss button
+- [x] E2 — `src/components/ScaleUnlockModal.jsx` — modal with scale name + flavor text + dismiss button (no re-trigger; guarded by reducer state + nextScale-only check)
 - [ ] E3 — `Universe.jsx` visual changes per scale (color / label)
 - [ ] E4 — Verify Scale 2: 100 biomass → modal, visual changes, Cell Division available
 - [ ] E5 — Verify Scale 3: 1,000 biomass → modal, visual changes, Photosynthesis available
