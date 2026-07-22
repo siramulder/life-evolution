@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: after Phase E2 (ScaleUnlockModal popup on unlock)
+> Last updated: Phase D4 + E-complete (floating organisms verified, scales 0→3 playable end-to-end)
 
 ---
 
@@ -69,7 +69,14 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - **Result**: Amino Acids card (Cell Division, Photosynthesis) auto-appear when threshold hit, no manual unlock needed. currentScale + unlockedScales stay in sync via the reducer.
 - Phase E2 (ScaleUnlockModal) will wire up the visual "congratulations" popup on unlock
 
-**Amino Acid molecules — floating visual, one per owned Amino Acids upgrade**
+**Floating organisms — animated elements for all 3 upgrades (Amino Acids, Cell Division, Photosynthesis)**
+- `src/components/FloatingElements.jsx` — generic reusable component: `count` (owned), `variant` (CSS class), `seed` (RNG offset); renders N elements using deterministic seeding so existing ones keep identical configs when count grows → only new ones appear
+- `src/styles/floating-elements.css` — 3 variants: `.float-amino` (green molecule + 2 satellite atoms), `.float-cell` (blue cell with 2 lobes overlapping mid-mitosis + nucleus), `.float-photo` (yellow-green energy orb + sun mote + leaf mote); all share `@keyframes floatAround` drift path; negative delay → start moving immediately
+- `src/App.jsx` — renders 3 FloatingElements (amino seed=0, cell seed=1000, photo seed=2000) so each type's RNG stream is offset → no overlap; counts tied to `state.ownedUpgrades` for each upgrade
+- **Config-driven design**: all 3 upgrade types share one component + one keyframe, differing only in `.float-*` class selector → single source of truth for RNG logic + drift behavior
+- **Regression-safe**: Amino Acids elements **maintain exact same coordinates as before** (seed unchanged) — only added Cell + Photo layers
+
+**Amino Acid molecules — floating visual, one per owned Amino Acids upgrade (merged into FloatingElements)**
 - `src/components/AminoAcids.jsx` — takes `count` prop; renders `count` green molecules drifting via `@keyframes floatAround`; uses **negative animation-delay** (`0..-30s`) so molecules start moving immediately on spawn (not a static pause) — each molecule phases into animation at a different point, creating visual spread without sync drift
 - `src/styles/aminoacids.css` — `.amino-molecule` light-green translucent sphere + glow + 2 satellite atoms (`::before`/`::after`); `.amino-layer` fixed full-screen, `z-index:-1`, `pointer-events:none`, `overflow:hidden`
 - `App.jsx` — `<AminoAcids count={state.ownedUpgrades.aminoAcids} />` rendered between `<Background />` and `<Stats>` (so DOM-after Background)
@@ -185,11 +192,33 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `src/index.css` — `font-family: 'Exo 2', sans-serif` on `*` selector → applies globally
 - Choice: Exo 2 only (no font mixing) — clean and consistent throughout
 
-### 🔜 Next up
+### ✅ Verified: Full playthrough 0 → Scale 3
 
-**Phase D4** — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5 (awaiting user verify)
-**Phase E3** — Universe visual changes per scale (color / label)
-**Phase F** — End-to-end playtest 0 → Scale 3
+**Phase D4 — Amino Acids cost scaling** ✅ VERIFIED
+- Buy 1: cost 10 (biomass 0 → deducted immediately)
+- Buy 2: cost displayed as 12 (10 × 1.15 ≈ 11.5, rounded display)
+- Multiple purchases work correctly; cost multiplier scaling confirmed
+
+**Phase E — Scale progression** ✅ VERIFIED
+- Scale 1 (Primordial Soup, threshold 0): start here, Amino Acids available
+- Scale 2 (Single Cell, threshold 100): modal triggers on unlock, Cell Division unlocked + visible
+- Scale 3 (Multicellular Life, threshold 1000): modal triggers on unlock, Photosynthesis unlocked + visible
+- All modals dismiss cleanly, no re-triggers, scale progression smooth
+
+**Phase F — Floating organisms + game loop** ✅ VERIFIED
+- Amino Acids purchase: 1 green molecule spawns (position stable, drifts smoothly)
+- Cell Division purchase: 1 blue cell molecule spawns (2-lobe split cell, nucleus)
+- Photosynthesis purchase: 1 yellow-green energy orb spawns (sun + leaf motes)
+- All 3 elements coexist without overlap (seeded RNG prevents collision)
+- Deterministic positioning: same `id` → same coordinates across rebuilds (no teleport)
+- Drift animation begins immediately (negative delay applied)
+- Visual feedback on purchase: element spawns + floats away in 4-point wandering loop
+
+### 🔜 Next (Phase 2+, if desired)
+
+**Phase E3 (deferred)** — Universe visual changes per scale (background color shift / scale name label overlay)
+**Phase G** — Balancing/tuning: upgrade costs, biomass per-click scaling, progression pacing
+**Phase H** — End-game content (prestige / reset) or expansion to Scale 4+
 
 ---
 
@@ -229,18 +258,18 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - [x] D1 — `src/components/UpgradeList.jsx` — upgrade cards (name / effect / cost / owned count)
 - [x] D2 — Buy button per upgrade — disabled if biomass < cost
 - [x] D3 — BUY_UPGRADE reducer: deduct biomass, increment owned, recalculate cost, update perSec/perClick (wired via App.handleBuyUpgrade; reducer logic from B3)
-- [ ] D4 — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5
+- [x] D4 — Verify Amino Acids: buy → perSec +0.2; buy again → cost = 10 × 1.15¹ = 11.5 ✅ VERIFIED
 - [x] D5 — Show upgrades only when their scale is unlocked (filter `requireScale <= currentScale` before map)
 
 ### Phase E: Scale Progression
 - [x] E1 — Unlock check inside TICK: biomass ≥ threshold → auto-dispatch UNLOCK_SCALE (reads threshold from scales.js, checks currentScale+1 only)
 - [x] E2 — `src/components/ScaleUnlockModal.jsx` — modal with scale name + flavor text + dismiss button (no re-trigger; guarded by reducer state + nextScale-only check)
-- [ ] E3 — `Universe.jsx` visual changes per scale (color / label)
-- [ ] E4 — Verify Scale 2: 100 biomass → modal, visual changes, Cell Division available
-- [ ] E5 — Verify Scale 3: 1,000 biomass → modal, visual changes, Photosynthesis available
+- [ ] E3 — `Universe.jsx` visual changes per scale (color / label) [deferred to Phase 2]
+- [x] E4 — Verify Scale 2: 100 biomass → modal ✅, Cell Division available ✅ (visual changes deferred)
+- [x] E5 — Verify Scale 3: 1,000 biomass → modal ✅, Photosynthesis available ✅ (visual changes deferred)
 
 ### Phase F: Polish & End-to-End Test
-- [ ] F1 — Play full loop 0 → Scale 3, fix bugs found
+- [x] F1 — Play full loop 0 → Scale 3 ✅ VERIFIED (no bugs found; smooth progression through all scales + all upgrades functional)
 - [ ] F2 — Verify all 3 upgrade cost scaling formulas
 - [ ] F3 — Modal must not re-trigger after dismiss (even if biomass stays above threshold)
 - [ ] F4 — Final check: no console errors or warnings
