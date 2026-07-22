@@ -1,0 +1,119 @@
+/* FloatingElements — decorative drifting elements, one per owned upgrade.
+   Base layout is shared; each `variant` class restyles color + satellite atoms.
+   Sits in the same negative z-index band as the Background (behind the
+   transparent Universe + pulse-circle); pointer-events:none so clicks pass. */
+
+.float-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.float-molecule {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation-name: floatAround;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.float-molecule::before,
+.float-molecule::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+
+/* --- Amino Acids: green molecule + two satellite atoms --- */
+.float-amino {
+  background: rgba(144, 238, 144, 0.5);
+  box-shadow: 0 0 10px rgba(144, 238, 144, 0.5);
+}
+.float-amino::before {
+  width: 50%;
+  height: 50%;
+  top: -30%;
+  left: 60%;
+  background: rgba(144, 238, 144, 0.4);
+  box-shadow: 0 0 6px rgba(144, 238, 144, 0.4);
+}
+.float-amino::after {
+  width: 40%;
+  height: 40%;
+  bottom: -20%;
+  left: -25%;
+  background: rgba(144, 238, 144, 0.4);
+  box-shadow: 0 0 6px rgba(144, 238, 144, 0.4);
+}
+
+/* --- Cell Division: blue cell splitting into two lobes + a darker nucleus --- */
+.float-cell {
+  background: rgba(96, 165, 250, 0.45);
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+}
+.float-cell::before {
+  /* second lobe — overlaps like a cell mid-mitosis */
+  width: 85%;
+  height: 85%;
+  top: 8%;
+  left: 55%;
+  background: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.45);
+}
+.float-cell::after {
+  /* nucleus */
+  width: 30%;
+  height: 30%;
+  top: 35%;
+  left: 22%;
+  background: rgba(37, 99, 235, 0.7);
+}
+
+/* --- Photosynthesis: warm yellow-green energy orb (sun + leaf motes) --- */
+.float-photo {
+  background: rgba(190, 242, 100, 0.5);
+  box-shadow: 0 0 14px rgba(190, 242, 100, 0.6);
+}
+.float-photo::before {
+  /* sun mote */
+  width: 45%;
+  height: 45%;
+  top: -25%;
+  left: 28%;
+  background: rgba(253, 224, 71, 0.6);
+  box-shadow: 0 0 8px rgba(253, 224, 71, 0.6);
+}
+.float-photo::after {
+  /* leaf mote */
+  width: 35%;
+  height: 35%;
+  bottom: -20%;
+  left: 50%;
+  background: rgba(132, 204, 22, 0.5);
+  box-shadow: 0 0 6px rgba(132, 204, 22, 0.5);
+}
+
+/* Drift slowly around in a wandering loop — shared by all variants. */
+@keyframes floatAround {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(30px, -40px);
+  }
+  50% {
+    transform: translate(-20px, 20px);
+  }
+  75% {
+    transform: translate(15px, 30px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}

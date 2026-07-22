@@ -2,7 +2,7 @@ import { useReducer, useEffect, useState } from 'react'
 import { initialState, gameReducer } from './game/gameState'
 import { scales } from './game/scales'
 import { Background } from './components/Background'
-import { AminoAcids } from './components/AminoAcids'
+import { FloatingElements } from './components/FloatingElements'
 import { Universe } from './components/Universe'
 import { Stats } from './components/Stats'
 import { UpgradeList } from './components/UpgradeList'
@@ -53,7 +53,21 @@ function App() {
   return (
     <>
       <Background />
-      <AminoAcids count={state.ownedUpgrades.aminoAcids} />
+      <FloatingElements
+        count={state.ownedUpgrades.aminoAcids}
+        variant="float-amino"
+        seed={0}
+      />
+      <FloatingElements
+        count={state.ownedUpgrades.cellDivision}
+        variant="float-cell"
+        seed={1000}
+      />
+      <FloatingElements
+        count={state.ownedUpgrades.photosynthesis}
+        variant="float-photo"
+        seed={2000}
+      />
       <Stats biomass={state.biomass} perSec={state.perSec} />
       <Universe onClick={handleClick} />
       <UpgradeList state={state} onBuy={handleBuyUpgrade} />
