@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Phase D4 + E-complete (floating organisms verified, scales 0→3 playable end-to-end)
+> Last updated: Phase E3 (per-scale background color + scale name label)
 
 ---
 
@@ -192,6 +192,18 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `src/index.css` — `font-family: 'Exo 2', sans-serif` on `*` selector → applies globally
 - Choice: Exo 2 only (no font mixing) — clean and consistent throughout
 
+**Phase E3 — Universe visual changes per scale (background color + scale-name label)**
+- `Background.jsx` — new `currentScale` prop, applied as `className={`background-layer scale-${currentScale}`}`; bubbles/particles logic untouched
+- `background.css` — gradient stops (`--bg-from`/`--bg-to`) declared as **registered custom properties** (`@property ... syntax: '<color>'`), then `.scale-1`/`.scale-2`/`.scale-3` each redefine the two vars (violet → ocean blue → green/turquoise); `.background-layer` transitions `--bg-from`/`--bg-to` over 1.5s
+- `Universe.jsx` — new `scaleName` prop, rendered as `<div className="scale-label">{scaleName}</div>` inside `.universe`
+- `universe.css` — `.scale-label` absolutely positioned under `.pulse-circle` (`top: calc(50% + 90px)`, `translateX(-50%)`), white 70% opacity, wide letter-spacing, uppercase, `pointer-events: none`
+- `App.jsx` — derives `currentScaleObj = scales.find(s => s.id === state.currentScale)`; passes `currentScale`/`scaleName` down to `Background`/`Universe`
+- ⚠️ **`transition: background` does NOT animate a gradient swap** — `background-image` (which a `linear-gradient` is) is not an animatable CSS property; a plain class-swap transition silently no-ops (verified: 0 `Animation` objects created on a naive test element). Fix: transition the gradient's **color stops**, not the gradient itself — `@property` gives each stop a real `<color>` type, and typed custom properties DO interpolate. Root cause to remember if another gradient-swap-with-transition is attempted anywhere in this project.
+- **Browser support caveat**: `@property` needs Chrome 85+/Safari 16.4+/Firefox 128+ — fine for local dev, would need a fallback (e.g. stacked-layer opacity cross-fade) if ever shipped somewhere older
+- Verified via computed styles (headless preview pane couldn't screenshot/composite frames — `visibility:hidden` freezes CSS transition clocks): scale-1 `#2e1065→#6d28d9`, scale-2 `#082f49→#0369a1`, scale-3 `#064e3b→#0d9488`, all three confirmed by reading `getComputedStyle(...).backgroundImage` after forcing frozen transitions to `.finish()`; label text confirmed "Primordial Soup"/"Single Cell"/"Multicellular Life" matching `state.currentScale`
+- **Click-through regression check**: clicked at the label's exact bounding-box center — `elementFromPoint` resolved to `.universe` (not `.scale-label`), biomass incremented correctly (+5 for 5 clicks) → `pointer-events: none` on the label confirmed not to block the click mechanic
+- User to eyeball the actual 1.5s cross-fade smoothness in a real (non-headless) browser — computed-style checks prove the transition fires and lands on the right end color, but not its visual smoothness
+
 ### ✅ Verified: Full playthrough 0 → Scale 3
 
 **Phase D4 — Amino Acids cost scaling** ✅ VERIFIED
@@ -216,7 +228,6 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🔜 Next (Phase 2+, if desired)
 
-**Phase E3 (deferred)** — Universe visual changes per scale (background color shift / scale name label overlay)
 **Phase G** — Balancing/tuning: upgrade costs, biomass per-click scaling, progression pacing
 **Phase H** — End-game content (prestige / reset) or expansion to Scale 4+
 
@@ -264,9 +275,9 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 ### Phase E: Scale Progression
 - [x] E1 — Unlock check inside TICK: biomass ≥ threshold → auto-dispatch UNLOCK_SCALE (reads threshold from scales.js, checks currentScale+1 only)
 - [x] E2 — `src/components/ScaleUnlockModal.jsx` — modal with scale name + flavor text + dismiss button (no re-trigger; guarded by reducer state + nextScale-only check)
-- [ ] E3 — `Universe.jsx` visual changes per scale (color / label) [deferred to Phase 2]
-- [x] E4 — Verify Scale 2: 100 biomass → modal ✅, Cell Division available ✅ (visual changes deferred)
-- [x] E5 — Verify Scale 3: 1,000 biomass → modal ✅, Photosynthesis available ✅ (visual changes deferred)
+- [x] E3 — `Universe.jsx` visual changes per scale (color / label) ✅ background gradient (per-scale, 1.5s fade via `@property`) + scale-name label under pulse-circle
+- [x] E4 — Verify Scale 2: 100 biomass → modal ✅, Cell Division available ✅, background fades to ocean-blue ✅, label "Single Cell" ✅
+- [x] E5 — Verify Scale 3: 1,000 biomass → modal ✅, Photosynthesis available ✅, background fades to green/turquoise ✅, label "Multicellular Life" ✅
 
 ### Phase F: Polish & End-to-End Test
 - [x] F1 — Play full loop 0 → Scale 3 ✅ VERIFIED (no bugs found; smooth progression through all scales + all upgrades functional)

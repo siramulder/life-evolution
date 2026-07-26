@@ -50,9 +50,13 @@ function App() {
     ? scales.find((s) => s.id === state.pendingModalScale)
     : null
 
+  // The scale the player is currently on — drives the background palette and
+  // the label under the core. Derived from state, never stored separately.
+  const currentScaleObj = scales.find((s) => s.id === state.currentScale)
+
   return (
     <>
-      <Background />
+      <Background currentScale={state.currentScale} />
       <FloatingElements
         count={state.ownedUpgrades.aminoAcids}
         variant="float-amino"
@@ -69,7 +73,7 @@ function App() {
         seed={2000}
       />
       <Stats biomass={state.biomass} perSec={state.perSec} />
-      <Universe onClick={handleClick} />
+      <Universe onClick={handleClick} scaleName={currentScaleObj.name} />
       <UpgradeList state={state} onBuy={handleBuyUpgrade} />
       {floatingNumbers.map((b) => (
         <div

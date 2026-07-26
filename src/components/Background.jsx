@@ -6,7 +6,9 @@ const rand = (min, max) => Math.random() * (max - min) + min
 
 // Background — ambient bubbles rising + particles drifting in the soup.
 // Pure decoration: every element is pointer-events:none so it never blocks a click.
-export function Background() {
+// `currentScale` only picks a CSS class (scale-1/2/3) — the colors themselves
+// live in background.css, not here.
+export function Background({ currentScale }) {
   // useMemo([]) → build these random configs ONCE on mount and reuse them on
   // every re-render. The TICK action re-renders App 10×/sec; without useMemo we'd
   // re-randomize size/left/delay each tick and the animations would jump constantly.
@@ -38,7 +40,7 @@ export function Background() {
   )
 
   return (
-    <div className="background-layer">
+    <div className={`background-layer scale-${currentScale}`}>
       {bubbles.map((b) => (
         <div
           key={`bubble-${b.id}`}

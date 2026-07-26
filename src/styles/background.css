@@ -2,6 +2,24 @@
    Sits ABOVE the opaque Universe gradient (so it's visible) but is
    pointer-events:none, so clicks fall straight through to the Universe below. */
 
+/* The two gradient stops are declared as REGISTERED custom properties.
+   Why not just swap `background` per scale? Because a linear-gradient is a
+   background-IMAGE, and background-image cannot be transitioned — the browser
+   would snap instantly from purple to blue, ignoring `transition: background`.
+   @property gives these vars a real <color> type, and typed custom properties
+   CAN be interpolated. So we transition the two colors and let the gradient
+   redraw from them each frame → a genuine 1.5s cross-fade. */
+@property --bg-from {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #2e1065; /* same as scale-1, so there's no flash on first paint */
+}
+@property --bg-to {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #6d28d9;
+}
+
 .background-layer {
   position: fixed;
   top: 0;
@@ -9,10 +27,16 @@
   width: 100vw;
   height: 100vh;
 
-  /* The primordial-soup gradient lives HERE now (moved off .universe) so this
-     layer can sit at the very back. That lets bubbles/particles render BEHIND
-     the pulse-circle (which is a child of the transparent Universe above). */
-  background: linear-gradient(135deg, #2e1065 0%, #6d28d9 100%);
+  /* The soup gradient lives HERE now (moved off .universe) so this layer can sit
+     at the very back. That lets bubbles/particles render BEHIND the pulse-circle
+     (a child of the transparent Universe above). The COLORS come from the vars
+     above — each .scale-N class below just redefines those two stops. */
+  background: linear-gradient(135deg, var(--bg-from) 0%, var(--bg-to) 100%);
+
+  /* Ease between scales instead of snapping the moment a scale unlocks. */
+  transition:
+    --bg-from 1.5s ease,
+    --bg-to 1.5s ease;
 
   /* z-index -1: truly behind the (now transparent) Universe. Must be NEGATIVE,
      not 0 — in CSS paint order a positioned z-index:0 element paints ABOVE a
@@ -24,6 +48,26 @@
 
   pointer-events: none; /* never intercept a click */
   overflow: hidden; /* clip bubbles that drift past the screen edges */
+}
+
+/* --- Per-scale palettes — the world visibly changes as life evolves. --- */
+
+/* Scale 1: Primordial Soup — deep violet, the original look. */
+.background-layer.scale-1 {
+  --bg-from: #2e1065;
+  --bg-to: #6d28d9;
+}
+
+/* Scale 2: Single Cell — ocean blues. Life is now IN water, not just chemistry. */
+.background-layer.scale-2 {
+  --bg-from: #082f49;
+  --bg-to: #0369a1;
+}
+
+/* Scale 3: Multicellular Life — green/turquoise. Photosynthesis has arrived. */
+.background-layer.scale-3 {
+  --bg-from: #064e3b;
+  --bg-to: #0d9488;
 }
 
 /* Bubbles — translucent circles that rise from below the screen to above it,

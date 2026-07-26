@@ -39,6 +39,28 @@
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* The current scale's name, sitting under the pulsing core.
+   ABSOLUTELY positioned on purpose: .universe is a centering flexbox, so adding
+   a second child in normal flow would push the pulse-circle upward to make room.
+   Taking the label out of flow keeps the core exactly at screen center — the
+   label just floats below it. 90px = the circle's 60px radius + a 30px gap. */
+.scale-label {
+  position: absolute;
+  top: calc(50% + 90px);
+  left: 50%;
+  transform: translateX(-50%); /* center the label on its own width */
+
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.35em; /* wide tracking reads as a title, not body text */
+  text-transform: uppercase;
+  white-space: nowrap; /* long names stay on one line */
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); /* stays legible on any palette */
+
+  pointer-events: none; /* clicks pass through to .universe underneath */
+}
+
 /* @keyframes defines the stages of the animation over one cycle.
    0% = start, 50% = midpoint, 100% = end (then it loops). */
 @keyframes pulse {
