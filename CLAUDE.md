@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Phase E3 (per-scale background color + scale name label)
+> Last updated: Click-feedback accessibility fix (removed full-screen strobe)
 
 ---
 
@@ -191,6 +191,15 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `index.html` — added Google Fonts `<link>` for Exo 2 (weight 400 + 700)
 - `src/index.css` — `font-family: 'Exo 2', sans-serif` on `*` selector → applies globally
 - Choice: Exo 2 only (no font mixing) — clean and consistent throughout
+
+**Click-feedback accessibility fix — removed full-screen strobe flash**
+- Problem: `.universe:active { background: rgba(255,255,255,0.08) }` veiled the **entire 100vw×100vh viewport** on every click. At idle-game click rates (5-10/sec), this created a 5-10 Hz strobe, inside the 3-30 Hz band [WCAG 2.3.1](https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html) flags as a photosensitive-seizure risk.
+- Solution: Scoped feedback to the 120px core instead (~1.5% of screen):
+  - Deleted `.universe:active` flash rule entirely (left a comment explaining why, so it doesn't get re-added by accident)
+  - Added `.universe:active .pulse-circle { background: rgba(255,255,255,0.45) }` — a gentle press on the core only
+  - Added `transition: background 0.18s ease-out` to `.pulse-circle` — the eased edge prevents a hard on/off square wave (which reads as flashing even at low volume); rapid clicks now blend into one steady glow
+- Verified via CSSOM inspection: full-screen `.universe:active` rule confirmed gone, only one `:active` rule remains (core-scoped); click mechanic still works (0 → 3 biomass on 3 clicks)
+- Overall feedback: floating **+N** bubble at cursor (primary) + gentle core glow (secondary)
 
 **Phase E3 — Universe visual changes per scale (background color + scale-name label)**
 - `Background.jsx` — new `currentScale` prop, applied as `className={`background-layer scale-${currentScale}`}`; bubbles/particles logic untouched

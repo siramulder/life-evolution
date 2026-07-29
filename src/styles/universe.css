@@ -18,16 +18,15 @@
      BEHIND this element, so bubbles/particles show through and sit behind the
      pulse-circle (a child of this Universe). */
   background: transparent;
-
-  transition: background 0.08s ease;
 }
 
-/* Brief flash on click — feedback that the click registered. Universe is
-   transparent now, so we flash a faint white veil over the whole screen
-   instead of shifting the gradient (which moved to the background layer). */
-.universe:active {
-  background: rgba(255, 255, 255, 0.08);
-}
+/* NOTE: there is deliberately NO `.universe:active` flash any more.
+   It used to veil the whole viewport in rgba(255,255,255,0.08) on every click.
+   Because this element is 100vw × 100vh, rapid clicking (an idle game's normal
+   input rate, ~5-10 clicks/sec) turned the ENTIRE SCREEN into a strobe — tiring
+   to look at, and squarely inside the 3-30Hz band WCAG 2.3.1 flags as a
+   photosensitive-seizure risk. Click feedback is now LOCALISED instead:
+   the floating +N bubble at the cursor, plus the small press on the core below. */
 
 /* The pulsing core — a soft white circle that breathes in and out,
    like a heartbeat hinting at life forming in the soup. */
@@ -37,6 +36,20 @@
   border-radius: 50%; /* a full circle */
   background: rgba(255, 255, 255, 0.3);
   animation: pulse 2s ease-in-out infinite;
+
+  /* Eased so that rapid clicking blends into one steady glow rather than
+     snapping hard on/off — that hard edge is what actually reads as "flashing". */
+  transition: background 0.18s ease-out;
+}
+
+/* Click feedback, scoped to the 120px core instead of the whole viewport:
+   ~1.5% of the screen area, so it reads as "the thing I pressed responded"
+   without lighting up the player's peripheral vision on every click.
+   Deliberately uses `background` — the `pulse` keyframe below owns `transform`
+   and `opacity`, and a running animation beats a normal declaration in the
+   cascade, so touching either of those here would silently do nothing. */
+.universe:active .pulse-circle {
+  background: rgba(255, 255, 255, 0.45);
 }
 
 /* The current scale's name, sitting under the pulsing core.
