@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Click-feedback accessibility fix (removed full-screen strobe)
+> Last updated: Amino Acids element redrawn as a real molecule (inline SVG)
 
 ---
 
@@ -71,7 +71,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 **Floating organisms — animated elements for all 3 upgrades (Amino Acids, Cell Division, Photosynthesis)**
 - `src/components/FloatingElements.jsx` — generic reusable component: `count` (owned), `variant` (CSS class), `seed` (RNG offset); renders N elements using deterministic seeding so existing ones keep identical configs when count grows → only new ones appear
-- `src/styles/floating-elements.css` — 3 variants: `.float-amino` (green molecule + 2 satellite atoms), `.float-cell` (blue cell with 2 lobes overlapping mid-mitosis + nucleus), `.float-photo` (yellow-green energy orb + sun mote + leaf mote); all share `@keyframes floatAround` drift path; negative delay → start moving immediately
+- `src/styles/floating-elements.css` — 3 variants: `.float-amino` (~~green molecule + 2 satellite atoms~~ → **now an inline-SVG glycine skeleton, see the SVG entry above**), `.float-cell` (blue cell with 2 lobes overlapping mid-mitosis + nucleus), `.float-photo` (yellow-green energy orb + sun mote + leaf mote); all share `@keyframes floatAround` drift path; negative delay → start moving immediately
 - `src/App.jsx` — renders 3 FloatingElements (amino seed=0, cell seed=1000, photo seed=2000) so each type's RNG stream is offset → no overlap; counts tied to `state.ownedUpgrades` for each upgrade
 - **Config-driven design**: all 3 upgrade types share one component + one keyframe, differing only in `.float-*` class selector → single source of truth for RNG logic + drift behavior
 - **Regression-safe**: Amino Acids elements **maintain exact same coordinates as before** (seed unchanged) — only added Cell + Photo layers
@@ -192,6 +192,19 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `src/index.css` — `font-family: 'Exo 2', sans-serif` on `*` selector → applies globally
 - Choice: Exo 2 only (no font mixing) — clean and consistent throughout
 
+**Amino Acids element — real molecular structure via inline SVG (replaces CSS blob)**
+- Was: a green circle + 2 satellite dots drawn with `::before`/`::after`. Now: a glycine ball-and-stick skeleton — 7 atoms + 7 bond lines, drawn as inline SVG.
+- `src/components/shapes/AminoShape.jsx` (NEW) — `<svg viewBox="0 0 100 100">`, two `<g>` groups: **bonds first, atoms second** so the circles paint over the bond endpoints (standard ball-and-stick look). Atoms follow rough CPK convention: Cα/C grey-green, N blue, O red ×2, R bright green, H white. `aria-hidden` — purely decorative.
+- **C=O double bond math** (worth keeping, it's easy to get wrong): bond runs (75,50)→(90,30), so unit vector = (0.6,−0.8), perpendicular = (0.8,0.6); scaled by 1.5 → offset (1.2, 0.9), giving two parallel lines 3px apart at `76.2,50.9→91.2,30.9` and `73.8,49.1→88.8,29.1`.
+- `FloatingElements.jsx` — added a `shapes` map (`{'float-amino': AminoShape}`); a variant **absent** from the map renders a bare `<div>` exactly as before, so cell/photo take the unchanged code path. Also a `sizeRanges` map: amino **45–70px** (SVG detail needs room to be legible), everything else stays at `DEFAULT_SIZE = [20, 35]`.
+- ⚠️ **Size range changed but seeding did NOT** — the seed expression `pick(s * 93.98 + 5, …)` is byte-identical; only the output min/max is remapped, so each molecule keeps its *relative* size and its position/duration/delay are unchanged. Verified by recomputing with the pre-change formulas: left `66.7878%`, top `87.9415%`, duration `18.0012s`, delay `−29.2514s` all match the live DOM exactly.
+- ⚠️ **`drop-shadow`, NOT `box-shadow`, for the glow on any SVG variant** — `box-shadow` traces the div's square box, which on a transparent container renders a glowing *rectangle* around the molecule. `filter: drop-shadow(...)` follows the SVG's actual alpha channel so the glow hugs the bonds/atoms.
+- `.float-amino` also needs `border-radius: 0` to opt out of the base `.float-molecule { border-radius: 50% }`, and `background: none`. The base `.float-molecule::before/::after` rules still create pseudo-elements but they have no width/height/background → invisible, harmless.
+- `.float-amino svg { display: block }` — avoids the inline baseline gap pushing the SVG a few px past the box.
+- `minSize`/`maxSize` added to the `useMemo` dep array — constant per instance so behaviour is identical, but omitting them would be a latent stale-closure bug.
+- **Why SVG over pseudo-elements**: `::before`/`::after` gives exactly 2 shapes and this needs 14; bonds are lines between two points (CSS would need hand-computed rotation + length per bond); `viewBox` gives free proportional scaling at any container size; paint order is explicit rather than z-index games.
+- Verified: 7 circles + 7 lines at the exact spec coords/radii/fills; `pointer-events: none` on both container and `<svg>`; **`.float-cell`/`.float-photo` computed styles byte-identical to before** (bg/box-shadow/::before/::after/radius/size 20-35, no SVG child) and `git diff` on the CSS touches neither selector
+
 **Click-feedback accessibility fix — removed full-screen strobe flash**
 - Problem: `.universe:active { background: rgba(255,255,255,0.08) }` veiled the **entire 100vw×100vh viewport** on every click. At idle-game click rates (5-10/sec), this created a 5-10 Hz strobe, inside the 3-30 Hz band [WCAG 2.3.1](https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html) flags as a photosensitive-seizure risk.
 - Solution: Scoped feedback to the 120px core instead (~1.5% of screen):
@@ -243,6 +256,14 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 ---
 
 ## Known gotchas / lessons learned
+
+### 🐛 OPEN BUG — floating "+N" bubble ids collide (`Date.now() + Math.random()`)
+- `App.jsx` builds each click bubble's key as `id: Date.now() + Math.random()`. React logs *"Encountered two children with the same key"* when clicking fast.
+- Cause: `Date.now()` is ~1.78×10¹² (13 digits) and float64 holds ~16 significant digits, so adding a 0–1 fraction leaves only ~2–3 usable fractional digits — the random part gets truncated away.
+- Measured: **500 ids generated → 477 unique (23 collisions, ~4.6%)**.
+- Harmless today (bubbles are transient decoration) but it's a real React key violation; duplicate keys mean bubbles can be duplicated or omitted.
+- Fix when convenient: a monotonic counter (`useRef(0)`, `nextId.current++`) instead of timestamp+random.
+- **NOT introduced by the SVG amino work** — pre-existing since Phase C3, just surfaced by rapid automated clicking during verification.
 
 ### Dev server must be running to view the game
 - `ERR_CONNECTION_REFUSED` at `localhost:5173` does NOT mean a code error — it means no `npm run dev` process is running.
@@ -350,9 +371,11 @@ life-evolution/
 │   ├── App.jsx
 │   ├── main.jsx
 │   ├── components/
-│   │   ├── Background.jsx       # ambient bubbles + particles (decorative)
-│   │   ├── AminoAcids.jsx       # floating molecules, count = owned Amino Acids
-│   │   ├── Universe.jsx         # clickable main area
+│   │   ├── Background.jsx       # ambient bubbles + particles; per-scale gradient
+│   │   ├── FloatingElements.jsx # floating organisms, one per owned upgrade
+│   │   ├── shapes/
+│   │   │   └── AminoShape.jsx   # inline-SVG glycine skeleton (float-amino)
+│   │   ├── Universe.jsx         # clickable main area + scale-name label
 │   │   ├── Stats.jsx            # biomass counter + rate/sec
 │   │   ├── UpgradeList.jsx      # upgrade cards + buy buttons
 │   │   └── ScaleUnlockModal.jsx # popup on scale unlock
