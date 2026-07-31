@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Amino Acids element redrawn as a real molecule (inline SVG)
+> Last updated: Amino Acids molecule — inline SVG + per-spawn rotation
 
 ---
 
@@ -203,6 +203,10 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `.float-amino svg { display: block }` — avoids the inline baseline gap pushing the SVG a few px past the box.
 - `minSize`/`maxSize` added to the `useMemo` dep array — constant per instance so behaviour is identical, but omitting them would be a latent stale-closure bug.
 - **Why SVG over pseudo-elements**: `::before`/`::after` gives exactly 2 shapes and this needs 14; bonds are lines between two points (CSS would need hand-computed rotation + length per bond); `viewBox` gives free proportional scaling at any container size; paint order is explicit rather than z-index games.
+- **Per-spawn rotation** (follow-up): each molecule spawns tilted at its own angle so copies don't all read as the same orientation. `rotation: pick(s * 56.41 + 6, 0, 360)` — new seed expression continuing the `+1..+5` pattern, so it cannot perturb position/duration/delay/size. Passed as `<Shape rotation={m.rotation} />`; `AminoShape` applies it as `style={{ transform: rotate(Ndeg) }}`.
+- ⚠️ **Rotation must go on the `<svg>` CHILD, not the container div** — the container's `transform` is owned by the `floatAround` animation, and a running animation beats a normal declaration in the cascade, so `rotate()` there would silently do nothing (same trap as `.pulse-circle`, see the click-feedback entry). Child element = no conflict, and the drift path stays byte-identical.
+- ⚠️ **Rotate the `<svg>` ELEMENT, not a `<g>` inside it** — an `<svg>` clips to its own viewport. The carbonyl O sits ~52 units from centre, further than the 50-unit half-width, so rotating the *contents* would slice atoms off at certain angles. Rotating the element happens after that clip → nothing is ever cut (verified: content bbox 12–97 × 14–83, inside the 0–100 viewBox).
+- Rotation verified: 7 molecules, all angles distinct and each matching its seeded value to <0.05° (recovered from the rendered matrix via `atan2`); spawning a new molecule left all existing ones with **identical rotation + position + size + delay** (no re-roll); `.float-cell`/`.float-photo` still have no SVG child and `rotate: none`, computed styles byte-identical to the pre-SVG measurements
 - Verified: 7 circles + 7 lines at the exact spec coords/radii/fills; `pointer-events: none` on both container and `<svg>`; **`.float-cell`/`.float-photo` computed styles byte-identical to before** (bg/box-shadow/::before/::after/radius/size 20-35, no SVG child) and `git diff` on the CSS touches neither selector
 
 **Click-feedback accessibility fix — removed full-screen strobe flash**

@@ -45,6 +45,9 @@ export function FloatingElements({ count, variant, seed = 0 }) {
           // Same seed expression as always — only the output RANGE is per-variant,
           // so each molecule keeps its relative size, just remapped.
           size: pick(s * 93.98 + 5, minSize, maxSize), // px
+          // Spawn angle. New seed expression (+6) so it can't disturb any of the
+          // values above. Only SVG shapes use it — see the <Shape> call below.
+          rotation: pick(s * 56.41 + 6, 0, 360), // deg
         }
       }),
     [count, seed, minSize, maxSize],
@@ -65,7 +68,7 @@ export function FloatingElements({ count, variant, seed = 0 }) {
             animationDelay: `${m.delay}s`,
           }}
         >
-          {Shape ? <Shape /> : null}
+          {Shape ? <Shape rotation={m.rotation} /> : null}
         </div>
       ))}
     </div>

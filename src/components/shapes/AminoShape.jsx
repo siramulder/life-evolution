@@ -18,12 +18,21 @@ const O_RED = 'rgba(255, 120, 120, 0.85)' // oxygen
 const R_GREEN = 'rgba(150, 255, 170, 0.85)' // R-group (side chain)
 const H_WHITE = 'rgba(255, 255, 255, 0.75)' // hydrogen
 
-export function AminoShape() {
+// `rotation` (degrees) tilts the whole molecule so spawned copies don't all
+// point the same way. It is applied to the <svg> ELEMENT, not to a <g> inside
+// it: an <svg> clips to its own viewport, so rotating the contents internally
+// would slice off atoms that swing past the 0-100 box (the carbonyl O sits
+// ~52 units from centre — further than the 50-unit half-width). Rotating the
+// element instead happens after that clip, so nothing is ever cut off.
+// It also can't collide with the parent's drift animation, which owns
+// `transform` on the container div — a different element entirely.
+export function AminoShape({ rotation = 0 }) {
   return (
     <svg
       viewBox="0 0 100 100"
       width="100%"
       height="100%"
+      style={{ transform: `rotate(${rotation}deg)` }}
       // Decorative only — hide it from the accessibility tree.
       aria-hidden="true"
       focusable="false"
