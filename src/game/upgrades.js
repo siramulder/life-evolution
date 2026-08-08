@@ -23,8 +23,10 @@ export const upgrades = [
     requireScale: 1,
   },
   {
+    // id stays 'cellDivision' — it is the state key in ownedUpgrades and the
+    // link to the .float-cell variant. Only the displayed `name` changed.
     id: 'cellDivision',
-    name: 'Cell Division',
+    name: 'Amoeba',
     type: 'click-multiplier',
     effect: '+1 biomass/click',
     increment: 1,

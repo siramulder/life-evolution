@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { AminoShape } from './shapes/AminoShape'
+import { AmoebaShape } from './shapes/AmoebaShape'
 import '../styles/floating-elements.css'
 
 // Deterministic pseudo-random in [min, max) from a seed — same seed → same value.
@@ -14,6 +15,7 @@ const pick = (n, min, max) => min + seeded(n) * (max - min)
 // from this map renders as a bare styled div, exactly as before.
 const shapes = {
   'float-amino': AminoShape,
+  'float-cell': AmoebaShape,
 }
 
 // SVG variants carry real internal detail (bonds, distinct atoms), so they need

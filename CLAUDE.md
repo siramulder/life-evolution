@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Amino Acids molecule — inline SVG + per-spawn rotation
+> Last updated: Cell Division renamed to Amoeba + redrawn as inline SVG
 
 ---
 
@@ -71,7 +71,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 **Floating organisms — animated elements for all 3 upgrades (Amino Acids, Cell Division, Photosynthesis)**
 - `src/components/FloatingElements.jsx` — generic reusable component: `count` (owned), `variant` (CSS class), `seed` (RNG offset); renders N elements using deterministic seeding so existing ones keep identical configs when count grows → only new ones appear
-- `src/styles/floating-elements.css` — 3 variants: `.float-amino` (~~green molecule + 2 satellite atoms~~ → **now an inline-SVG glycine skeleton, see the SVG entry above**), `.float-cell` (blue cell with 2 lobes overlapping mid-mitosis + nucleus), `.float-photo` (yellow-green energy orb + sun mote + leaf mote); all share `@keyframes floatAround` drift path; negative delay → start moving immediately
+- `src/styles/floating-elements.css` — 3 variants: `.float-amino` (~~green molecule + 2 satellite atoms~~ → **now an inline-SVG glycine skeleton, see the SVG entry above**), `.float-cell` (~~blue cell with 2 lobes overlapping mid-mitosis + nucleus~~ → **now an inline-SVG amoeba, see the Amoeba entry above**), `.float-photo` (yellow-green energy orb + sun mote + leaf mote — the one variant still drawn in pure CSS); all share `@keyframes floatAround` drift path; negative delay → start moving immediately
 - `src/App.jsx` — renders 3 FloatingElements (amino seed=0, cell seed=1000, photo seed=2000) so each type's RNG stream is offset → no overlap; counts tied to `state.ownedUpgrades` for each upgrade
 - **Config-driven design**: all 3 upgrade types share one component + one keyframe, differing only in `.float-*` class selector → single source of truth for RNG logic + drift behavior
 - **Regression-safe**: Amino Acids elements **maintain exact same coordinates as before** (seed unchanged) — only added Cell + Photo layers
@@ -181,7 +181,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `src/game/upgrades.js` — array of 3 upgrade objects
 - Fields: `id` (camelCase string), `name`, `type`, `effect` (display string), `increment` (number for math), `baseCost`, `costMultiplier`, `requireScale`
 - Amino Acids (aminoAcids): auto-generator, +0.2/sec, cost 10, ×1.15, scale 1
-- Cell Division (cellDivision): click-multiplier, +1/click, cost 50, ×1.3, scale 2
+- Amoeba (cellDivision) — renamed from "Cell Division", id unchanged: click-multiplier, +1/click, cost 50, ×1.3, scale 2
 - Photosynthesis (photosynthesis): auto-generator, +5/sec, cost 500, ×1.2, scale 3
 - **Design note**: `effect` (string for UI) vs `increment` (number for logic) kept separate — display decoupled from math
 - **Design note**: string ids used as keys (will map to ownership counts in gameState)
@@ -191,6 +191,15 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `index.html` — added Google Fonts `<link>` for Exo 2 (weight 400 + 700)
 - `src/index.css` — `font-family: 'Exo 2', sans-serif` on `*` selector → applies globally
 - Choice: Exo 2 only (no font mixing) — clean and consistent throughout
+
+**"Cell Division" renamed to "Amoeba" + element redrawn as inline SVG**
+- Display name only: `upgrades.js` `name: 'Cell Division'` → `'Amoeba'`. **`id` stays `cellDivision`** — it is the `ownedUpgrades` state key (`App.jsx` reads `state.ownedUpgrades.cellDivision`), the BUY_UPGRADE lookup key, and the link to the `.float-cell` variant. `effect`/`baseCost`/`costMultiplier`/`requireScale` untouched, so no save/balance impact.
+- ⚠️ **Renaming an upgrade = change `name` ONLY.** `id` is load-bearing in 3+ places; changing it would silently reset owned counts and break the variant wiring. The CSS class stays `.float-cell` on purpose — renaming it too would be churn for zero gain.
+- `src/components/shapes/AmoebaShape.jsx` (NEW) — irregular closed bezier `<path>` body (uneven bulges = pseudopods, deliberately asymmetric so it reads as something that crawls) + 3 vacuoles + off-centre nucleus (48,48 r=11) + 5 granules. Repeated circles live in `vacuoles`/`granules` arrays so coordinates read as data. Draw order outside-in (body → vacuoles → nucleus → granules) so organelles always paint over cytoplasm.
+- ⚠️ **Converting a CSS-blob variant to SVG means STRIPPING the blob, not just re-tinting it.** `.float-cell` still had `background`, `box-shadow`, inherited `border-radius: 50%`, plus `::before` (second lobe) and `::after` (nucleus). Swapping only the glow would have left a blue circle + lobe + dot painting *behind* the green amoeba. Full strip needed: `background: none`, `border-radius: 0`, and delete both pseudo-element rules — same shape as the `.float-amino` conversion. Verified after: bg `rgba(0,0,0,0)`, box-shadow `none`, radius `0px`, both pseudo-elements `0px×0px` transparent.
+- `AmoebaShape` takes `rotation` like `AminoShape` — the shapes map passes `rotation={m.rotation}` to *every* shape, so omitting the prop would have made all amoebas share one angle while amino acids varied.
+- ⚠️ **Interior detail is currently sub-pixel**: `.float-cell` still uses `DEFAULT_SIZE = [20, 35]`, so at a 27px container the granules (r 1.5–2.5 in a 100-unit viewBox) render **0.81–1.35px** — invisible. Nucleus ~6px, body ~19.5px. Same problem that pushed amino to 45–70. Fix if it looks wrong: add `'float-cell': [40, 60]` to `sizeRanges`. Left alone because it shifts the visual balance against the photo blobs — user's call.
+- Verified: card reads "Amoeba" with `+1 biomass/click` / `Cost: 50` unchanged; `id` grep shows all 3 `cellDivision` references intact; SVG renders 1 `<path>` + 9 `<circle>`, bbox 11–83.3 × 19–86 inside the viewBox; `floatAround` + negative delay intact; `.float-amino`/`.float-photo` rules byte-identical read from CSSOM; no console errors
 
 **Amino Acids element — real molecular structure via inline SVG (replaces CSS blob)**
 - Was: a green circle + 2 satellite dots drawn with `::before`/`::after`. Now: a glycine ball-and-stick skeleton — 7 atoms + 7 bond lines, drawn as inline SVG.
@@ -336,7 +345,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 | Upgrade | Available at | Type | Effect | Base Cost | Multiplier |
 |---------|-------------|------|--------|-----------|------------|
 | Amino Acids | Scale 1 | Auto-generator | +0.2 biomass/sec | 10 | 1.15 |
-| Cell Division | Scale 2 | Click multiplier | +1 biomass/click | 50 | 1.30 |
+| Amoeba (id `cellDivision`) | Scale 2 | Click multiplier | +1 biomass/click | 50 | 1.30 |
 | Photosynthesis | Scale 3 | Auto-generator | +5 biomass/sec | 500 | 1.20 |
 
 **Cost formula:** `cost = baseCost × (multiplier ^ owned)`
@@ -346,7 +355,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 Click → +1 biomass
 Buy Amino Acids → +0.2 biomass/sec
 Reach 100 → unlock Scale 2 (Single Cell)
-Buy Cell Division → +2 biomass/click
+Buy Amoeba → +2 biomass/click
 Reach 1,000 → unlock Scale 3 (Multicellular Life)
 Buy Photosynthesis → +5 biomass/sec
 → End of MVP 1.0
@@ -378,7 +387,8 @@ life-evolution/
 │   │   ├── Background.jsx       # ambient bubbles + particles; per-scale gradient
 │   │   ├── FloatingElements.jsx # floating organisms, one per owned upgrade
 │   │   ├── shapes/
-│   │   │   └── AminoShape.jsx   # inline-SVG glycine skeleton (float-amino)
+│   │   │   ├── AminoShape.jsx   # inline-SVG glycine skeleton (float-amino)
+│   │   │   └── AmoebaShape.jsx  # inline-SVG amoeba (float-cell / id cellDivision)
 │   │   ├── Universe.jsx         # clickable main area + scale-name label
 │   │   ├── Stats.jsx            # biomass counter + rate/sec
 │   │   ├── UpgradeList.jsx      # upgrade cards + buy buttons
