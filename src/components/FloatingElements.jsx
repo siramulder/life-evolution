@@ -20,9 +20,13 @@ const shapes = {
 
 // SVG variants carry real internal detail (bonds, distinct atoms), so they need
 // more room than the CSS blobs before that detail is readable at a glance.
-const DEFAULT_SIZE = [20, 35] // px — unchanged for float-cell / float-photo
+const DEFAULT_SIZE = [20, 35] // px — the plain CSS blobs (float-photo)
 const sizeRanges = {
   'float-amino': [45, 70],
+  // An amoeba is a whole organism, not a molecule, so it out-sizes the amino
+  // acids on purpose. It also carries the finest interior detail of any shape
+  // (granules are r=1.5-2.5 in a 100-unit viewBox), which needs the room.
+  'float-cell': [55, 85],
 }
 
 // FloatingElements — decorative elements drifting in the soup, one per owned

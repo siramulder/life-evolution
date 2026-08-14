@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Cell Division renamed to Amoeba + redrawn as inline SVG
+> Last updated: Amoeba size range raised to 55-85px (interior detail now legible)
 
 ---
 
@@ -198,14 +198,26 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `src/components/shapes/AmoebaShape.jsx` (NEW) — irregular closed bezier `<path>` body (uneven bulges = pseudopods, deliberately asymmetric so it reads as something that crawls) + 3 vacuoles + off-centre nucleus (48,48 r=11) + 5 granules. Repeated circles live in `vacuoles`/`granules` arrays so coordinates read as data. Draw order outside-in (body → vacuoles → nucleus → granules) so organelles always paint over cytoplasm.
 - ⚠️ **Converting a CSS-blob variant to SVG means STRIPPING the blob, not just re-tinting it.** `.float-cell` still had `background`, `box-shadow`, inherited `border-radius: 50%`, plus `::before` (second lobe) and `::after` (nucleus). Swapping only the glow would have left a blue circle + lobe + dot painting *behind* the green amoeba. Full strip needed: `background: none`, `border-radius: 0`, and delete both pseudo-element rules — same shape as the `.float-amino` conversion. Verified after: bg `rgba(0,0,0,0)`, box-shadow `none`, radius `0px`, both pseudo-elements `0px×0px` transparent.
 - `AmoebaShape` takes `rotation` like `AminoShape` — the shapes map passes `rotation={m.rotation}` to *every* shape, so omitting the prop would have made all amoebas share one angle while amino acids varied.
-- ⚠️ **Interior detail is currently sub-pixel**: `.float-cell` still uses `DEFAULT_SIZE = [20, 35]`, so at a 27px container the granules (r 1.5–2.5 in a 100-unit viewBox) render **0.81–1.35px** — invisible. Nucleus ~6px, body ~19.5px. Same problem that pushed amino to 45–70. Fix if it looks wrong: add `'float-cell': [40, 60]` to `sizeRanges`. Left alone because it shifts the visual balance against the photo blobs — user's call.
+- ✅ **RESOLVED — amoeba was too small** (shipped at `DEFAULT_SIZE = [20, 35]`, user reported "ตัวจิ๋วเกินไป"). Now `'float-cell': [55, 85]`, giving 68–84px containers vs 27–34.5px before (~2.5× linear):
+
+  | feature | at 20–35 | at 55–85 |
+  |---|---|---|
+  | body width | ~19.5px | **49–61px** |
+  | nucleus (r=11) | ~6px | **15–18.5px** |
+  | vacuoles (r=4–8) | 2.2–5.6px | **5.4–13.4px** |
+  | granules (r=1.5–2.5) | **0.81–1.35px** (invisible) | **2.0–4.2px** (visible) |
+
+- ⚠️ **Sizing an SVG variant: work backwards from its SMALLEST feature, not the body.** The granules are r=1.5 in a 100-unit viewBox, so rendered diameter is `3 × containerPx / 100` — needing ~2px means a container ≥65px. An intermediate `[40, 60]` was considered and rejected precisely because it still left granules at ~1.2px, i.e. the same bug again. Any future shape with fine interior detail needs the same check before picking a range.
+- Amoeba deliberately out-sizes the amino acids (63.9–69.2px) — it is a whole organism, not a molecule.
+- Size-range changes are safe w.r.t. seeding: the seed expression `pick(s * 93.98 + 5, …)` is untouched, only the output min/max remaps, so **positions stay put and each element keeps its relative size**. Verified: `.float-cell` left/top match the seeded formulas to ~1e-5 after the change.
+- 🐛 **Verification gotcha**: comparing inline-style positions against recomputed seed values needs a tolerance ≥1e-4. The browser serialises `style.left` to **6 significant figures** (`15.6682%` for `15.668189…`), so a 1e-6 tolerance reports a false mismatch even when nothing changed.
 - Verified: card reads "Amoeba" with `+1 biomass/click` / `Cost: 50` unchanged; `id` grep shows all 3 `cellDivision` references intact; SVG renders 1 `<path>` + 9 `<circle>`, bbox 11–83.3 × 19–86 inside the viewBox; `floatAround` + negative delay intact; `.float-amino`/`.float-photo` rules byte-identical read from CSSOM; no console errors
 
 **Amino Acids element — real molecular structure via inline SVG (replaces CSS blob)**
 - Was: a green circle + 2 satellite dots drawn with `::before`/`::after`. Now: a glycine ball-and-stick skeleton — 7 atoms + 7 bond lines, drawn as inline SVG.
 - `src/components/shapes/AminoShape.jsx` (NEW) — `<svg viewBox="0 0 100 100">`, two `<g>` groups: **bonds first, atoms second** so the circles paint over the bond endpoints (standard ball-and-stick look). Atoms follow rough CPK convention: Cα/C grey-green, N blue, O red ×2, R bright green, H white. `aria-hidden` — purely decorative.
 - **C=O double bond math** (worth keeping, it's easy to get wrong): bond runs (75,50)→(90,30), so unit vector = (0.6,−0.8), perpendicular = (0.8,0.6); scaled by 1.5 → offset (1.2, 0.9), giving two parallel lines 3px apart at `76.2,50.9→91.2,30.9` and `73.8,49.1→88.8,29.1`.
-- `FloatingElements.jsx` — added a `shapes` map (`{'float-amino': AminoShape}`); a variant **absent** from the map renders a bare `<div>` exactly as before, so cell/photo take the unchanged code path. Also a `sizeRanges` map: amino **45–70px** (SVG detail needs room to be legible), everything else stays at `DEFAULT_SIZE = [20, 35]`.
+- `FloatingElements.jsx` — added a `shapes` map (`{'float-amino': AminoShape}`); a variant **absent** from the map renders a bare `<div>` exactly as before, so cell/photo take the unchanged code path. Also a `sizeRanges` map: amino **45–70px** (SVG detail needs room to be legible), everything else stays at `DEFAULT_SIZE = [20, 35]` — *(cell later got its own `[55, 85]` for the same reason; only `float-photo` still uses the default)*.
 - ⚠️ **Size range changed but seeding did NOT** — the seed expression `pick(s * 93.98 + 5, …)` is byte-identical; only the output min/max is remapped, so each molecule keeps its *relative* size and its position/duration/delay are unchanged. Verified by recomputing with the pre-change formulas: left `66.7878%`, top `87.9415%`, duration `18.0012s`, delay `−29.2514s` all match the live DOM exactly.
 - ⚠️ **`drop-shadow`, NOT `box-shadow`, for the glow on any SVG variant** — `box-shadow` traces the div's square box, which on a transparent container renders a glowing *rectangle* around the molecule. `filter: drop-shadow(...)` follows the SVG's actual alpha channel so the glow hugs the bonds/atoms.
 - `.float-amino` also needs `border-radius: 0` to opt out of the base `.float-molecule { border-radius: 50% }`, and `background: none`. The base `.float-molecule::before/::after` rules still create pseudo-elements but they have no width/height/background → invisible, harmless.
