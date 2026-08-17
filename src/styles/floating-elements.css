@@ -66,28 +66,21 @@
   height: 100%;
 }
 
-/* --- Photosynthesis: warm yellow-green energy orb (sun + leaf motes) --- */
+/* --- Photosynthesis: a Volvox colony, drawn by <VolvoxShape> as inline SVG.
+   Same rules as the other two SVG variants: no background / border-radius /
+   box-shadow of its own, and the ::before/::after motes are gone — the SVG
+   draws the whole colony, and any leftover CSS blob would paint BEHIND it.
+   Glow uses drop-shadow so it follows the sphere's alpha, not the square box. */
 .float-photo {
-  background: rgba(190, 242, 100, 0.5);
-  box-shadow: 0 0 14px rgba(190, 242, 100, 0.6);
+  background: none;
+  border-radius: 0; /* opt out of the base .float-molecule circle */
+  filter: drop-shadow(0 0 8px rgba(170, 245, 170, 0.55));
 }
-.float-photo::before {
-  /* sun mote */
-  width: 45%;
-  height: 45%;
-  top: -25%;
-  left: 28%;
-  background: rgba(253, 224, 71, 0.6);
-  box-shadow: 0 0 8px rgba(253, 224, 71, 0.6);
-}
-.float-photo::after {
-  /* leaf mote */
-  width: 35%;
-  height: 35%;
-  bottom: -20%;
-  left: 50%;
-  background: rgba(132, 204, 22, 0.5);
-  box-shadow: 0 0 6px rgba(132, 204, 22, 0.5);
+
+.float-photo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* Drift slowly around in a wandering loop — shared by all variants. */

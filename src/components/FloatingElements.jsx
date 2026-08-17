@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { AminoShape } from './shapes/AminoShape'
 import { AmoebaShape } from './shapes/AmoebaShape'
+import { VolvoxShape } from './shapes/VolvoxShape'
 import '../styles/floating-elements.css'
 
 // Deterministic pseudo-random in [min, max) from a seed — same seed → same value.
@@ -16,17 +17,23 @@ const pick = (n, min, max) => min + seeded(n) * (max - min)
 const shapes = {
   'float-amino': AminoShape,
   'float-cell': AmoebaShape,
+  'float-photo': VolvoxShape,
 }
 
 // SVG variants carry real internal detail (bonds, distinct atoms), so they need
-// more room than the CSS blobs before that detail is readable at a glance.
-const DEFAULT_SIZE = [20, 35] // px — the plain CSS blobs (float-photo)
+// more room than a plain CSS blob before that detail is readable at a glance.
+// Every variant is an SVG now, so DEFAULT_SIZE is only a fallback for any new
+// variant added without its own entry.
+const DEFAULT_SIZE = [20, 35] // px
 const sizeRanges = {
   'float-amino': [45, 70],
   // An amoeba is a whole organism, not a molecule, so it out-sizes the amino
   // acids on purpose. It also carries the finest interior detail of any shape
   // (granules are r=1.5-2.5 in a 100-unit viewBox), which needs the room.
   'float-cell': [55, 85],
+  // Volvox has the most pieces of any shape — 27 rim/interior cells at r=2-2.5
+  // plus 3 daughter colonies — so it needs at least as much room as the amoeba.
+  'float-photo': [55, 85],
 }
 
 // FloatingElements — decorative elements drifting in the soup, one per owned

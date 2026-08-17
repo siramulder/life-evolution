@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Amoeba size range raised to 55-85px (interior detail now legible)
+> Last updated: Photosynthesis redrawn as a Volvox colony — all 3 variants are SVG now
 
 ---
 
@@ -71,7 +71,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 **Floating organisms — animated elements for all 3 upgrades (Amino Acids, Cell Division, Photosynthesis)**
 - `src/components/FloatingElements.jsx` — generic reusable component: `count` (owned), `variant` (CSS class), `seed` (RNG offset); renders N elements using deterministic seeding so existing ones keep identical configs when count grows → only new ones appear
-- `src/styles/floating-elements.css` — 3 variants: `.float-amino` (~~green molecule + 2 satellite atoms~~ → **now an inline-SVG glycine skeleton, see the SVG entry above**), `.float-cell` (~~blue cell with 2 lobes overlapping mid-mitosis + nucleus~~ → **now an inline-SVG amoeba, see the Amoeba entry above**), `.float-photo` (yellow-green energy orb + sun mote + leaf mote — the one variant still drawn in pure CSS); all share `@keyframes floatAround` drift path; negative delay → start moving immediately
+- `src/styles/floating-elements.css` — 3 variants: `.float-amino` (~~green molecule + 2 satellite atoms~~ → **now an inline-SVG glycine skeleton, see the SVG entry above**), `.float-cell` (~~blue cell with 2 lobes overlapping mid-mitosis + nucleus~~ → **now an inline-SVG amoeba, see the Amoeba entry above**), `.float-photo` (~~yellow-green energy orb + sun mote + leaf mote~~ → **now an inline-SVG Volvox colony, see the Volvox entry above**); **all three are inline SVG now — no CSS-blob variants remain**; all share `@keyframes floatAround` drift path; negative delay → start moving immediately
 - `src/App.jsx` — renders 3 FloatingElements (amino seed=0, cell seed=1000, photo seed=2000) so each type's RNG stream is offset → no overlap; counts tied to `state.ownedUpgrades` for each upgrade
 - **Config-driven design**: all 3 upgrade types share one component + one keyframe, differing only in `.float-*` class selector → single source of truth for RNG logic + drift behavior
 - **Regression-safe**: Amino Acids elements **maintain exact same coordinates as before** (seed unchanged) — only added Cell + Photo layers
@@ -192,6 +192,14 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `src/index.css` — `font-family: 'Exo 2', sans-serif` on `*` selector → applies globally
 - Choice: Exo 2 only (no font mixing) — clean and consistent throughout
 
+**Photosynthesis element redrawn as a Volvox colony (inline SVG) — all 3 variants are now SVG**
+- `src/components/shapes/VolvoxShape.jsx` (NEW) — translucent gel sphere (r=40) + 3 asymmetric daughter colonies + 18 rim cells (r=2.5) + 9 dimmer inner cells (r=2). Draw order back-to-front: sphere → daughters → inner ring → rim. The **dimmer inner ring at a smaller radius is what sells the sphere as 3D** rather than a flat disc.
+- **Rim cells are computed, not hardcoded** — a `ring(count, radius, dotR, startDeg)` helper returns `{cx: 50 + r·cos θ, cy: 50 + r·sin θ}`; the inner ring is offset by half a step (`startDeg=20`) so the two rings don't line up spoke-on-spoke. 27 hand-written circles would have been unreadable and unmaintainable.
+- `VolvoxShape` takes `rotation` like the other two — the shapes map passes it to *every* shape. It matters here despite near-radial symmetry because the daughter colonies are placed asymmetrically.
+- **`DEFAULT_SIZE` is now only a fallback.** Every variant has its own `sizeRanges` entry, so the old comment ("the plain CSS blobs") was stale — there are no CSS-blob variants left.
+- ⚠️ **Volvox is NOT the largest of the three, despite that being the stated intent.** Spec asked for "largest" *and* for `[55, 85]` — which is exactly the amoeba's range, so they tie (observed: amoeba 69.2–84px, volvox 59.2–73px). Shipped the explicit number rather than substituting a different one. To make it genuinely largest: `'float-photo': [70, 100]`.
+- Verified: 31 circles (1 sphere + 3 daughters + 9 inner + 18 rim); all 18 rim cells on radius 40 within 0.02 units at uniform **20°** spacing; bbox 7.5–92.5 × 8.1–91.9 inside the viewBox; blob fully stripped (bg `rgba(0,0,0,0)`, box-shadow `none`, radius `0px`, both pseudo-elements `0px×0px`); `floatAround` + negative delay + `pointer-events: none` on container *and* svg; legible at the smallest instance (59.2px → rim 2.96px, inner 2.37px, smallest daughter 7.1px, all above the ~2px threshold); `.float-amino`/`.float-cell` produce **zero** diff lines and unchanged computed styles; no console errors
+
 **"Cell Division" renamed to "Amoeba" + element redrawn as inline SVG**
 - Display name only: `upgrades.js` `name: 'Cell Division'` → `'Amoeba'`. **`id` stays `cellDivision`** — it is the `ownedUpgrades` state key (`App.jsx` reads `state.ownedUpgrades.cellDivision`), the BUY_UPGRADE lookup key, and the link to the `.float-cell` variant. `effect`/`baseCost`/`costMultiplier`/`requireScale` untouched, so no save/balance impact.
 - ⚠️ **Renaming an upgrade = change `name` ONLY.** `id` is load-bearing in 3+ places; changing it would silently reset owned counts and break the variant wiring. The CSS class stays `.float-cell` on purpose — renaming it too would be churn for zero gain.
@@ -292,6 +300,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### Dev server must be running to view the game
 - `ERR_CONNECTION_REFUSED` at `localhost:5173` does NOT mean a code error — it means no `npm run dev` process is running.
+- ⚠️ **5173 is NOT guaranteed to be this project.** The user has other Vite projects (e.g. `glass-bead-game`); whichever starts first takes 5173 and Vite silently moves the next one to **5174**, printing `Port 5173 is in use, trying another one...`. A page that loads but shows the *wrong app* looks exactly like a broken build. **Always read the port off the `npm run dev` output and check the tab title says `life-evolution` before debugging anything.**
 - Vite only serves the page while `npm run dev` is alive. Close the terminal / stop the process → connection refused.
 - Vite has **HMR (Hot Module Replacement)**: save a file → browser updates automatically, no manual refresh needed.
 - Start it from the project folder: `cd C:\Users\Sira\claude-game\life-evolution && npm run dev`
@@ -400,7 +409,8 @@ life-evolution/
 │   │   ├── FloatingElements.jsx # floating organisms, one per owned upgrade
 │   │   ├── shapes/
 │   │   │   ├── AminoShape.jsx   # inline-SVG glycine skeleton (float-amino)
-│   │   │   └── AmoebaShape.jsx  # inline-SVG amoeba (float-cell / id cellDivision)
+│   │   │   ├── AmoebaShape.jsx  # inline-SVG amoeba (float-cell / id cellDivision)
+│   │   │   └── VolvoxShape.jsx  # inline-SVG Volvox colony (float-photo)
 │   │   ├── Universe.jsx         # clickable main area + scale-name label
 │   │   ├── Stats.jsx            # biomass counter + rate/sec
 │   │   ├── UpgradeList.jsx      # upgrade cards + buy buttons
