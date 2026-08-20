@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Photosynthesis redrawn as a Volvox colony — all 3 variants are SVG now
+> Last updated: Amoeba recolored to blue; Photosynthesis renamed to Volvox
 
 ---
 
@@ -66,10 +66,10 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - If no → return new state with just the new biomass
 - **Single source of truth**: threshold lives in `scales.js` only — reducer reads from there, not hardcoded. If balance changes, edit scales.js once.
 - **Check one scale ahead only** (currentScale + 1): biomass grows in tiny steps (perSec/10 per tick), can't leap past 2 scales in a tick. Next-scale-only is fast + correct + future-proof (easy to add scale 4-6).
-- **Result**: Amino Acids card (Cell Division, Photosynthesis) auto-appear when threshold hit, no manual unlock needed. currentScale + unlockedScales stay in sync via the reducer.
+- **Result**: Amino Acids card (Amoeba, Volvox) auto-appear when threshold hit, no manual unlock needed. currentScale + unlockedScales stay in sync via the reducer.
 - Phase E2 (ScaleUnlockModal) will wire up the visual "congratulations" popup on unlock
 
-**Floating organisms — animated elements for all 3 upgrades (Amino Acids, Cell Division, Photosynthesis)**
+**Floating organisms — animated elements for all 3 upgrades (Amino Acids, Amoeba, Volvox)**
 - `src/components/FloatingElements.jsx` — generic reusable component: `count` (owned), `variant` (CSS class), `seed` (RNG offset); renders N elements using deterministic seeding so existing ones keep identical configs when count grows → only new ones appear
 - `src/styles/floating-elements.css` — 3 variants: `.float-amino` (~~green molecule + 2 satellite atoms~~ → **now an inline-SVG glycine skeleton, see the SVG entry above**), `.float-cell` (~~blue cell with 2 lobes overlapping mid-mitosis + nucleus~~ → **now an inline-SVG amoeba, see the Amoeba entry above**), `.float-photo` (~~yellow-green energy orb + sun mote + leaf mote~~ → **now an inline-SVG Volvox colony, see the Volvox entry above**); **all three are inline SVG now — no CSS-blob variants remain**; all share `@keyframes floatAround` drift path; negative delay → start moving immediately
 - `src/App.jsx` — renders 3 FloatingElements (amino seed=0, cell seed=1000, photo seed=2000) so each type's RNG stream is offset → no overlap; counts tied to `state.ownedUpgrades` for each upgrade
@@ -88,7 +88,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 **Phase D5 — upgrades filtered by unlocked scale**
 - `UpgradeList.jsx` — before `.map()`, filter: `const unlocked = upgrades.filter((u) => u.requireScale <= state.currentScale)`; map over `unlocked` instead of `upgrades`. Card/button/cost internals unchanged.
 - **filter-before-map** (not `return null` inside map): keeps the "which items show" rule (business logic) separate from "how they render" (presentation); avoids the `key`-on-null hassle and wasted loop passes
-- At `currentScale: 1` (initial) → only Amino Acids shows (requireScale 1); Cell Division (2) + Photosynthesis (3) hidden until their scale unlocks
+- At `currentScale: 1` (initial) → only Amino Acids shows (requireScale 1); Amoeba (2) + Volvox (3) hidden until their scale unlocks
 - Verify note: no auto-unlock yet (that's Phase E) → to test scale 2/3 cards, temporarily set `currentScale` in `gameState.js` initialState, then revert to 1
 - Completes Phase D. Next: Phase E (auto-unlock check in TICK + ScaleUnlockModal + per-scale visual)
 
@@ -182,7 +182,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Fields: `id` (camelCase string), `name`, `type`, `effect` (display string), `increment` (number for math), `baseCost`, `costMultiplier`, `requireScale`
 - Amino Acids (aminoAcids): auto-generator, +0.2/sec, cost 10, ×1.15, scale 1
 - Amoeba (cellDivision) — renamed from "Cell Division", id unchanged: click-multiplier, +1/click, cost 50, ×1.3, scale 2
-- Photosynthesis (photosynthesis): auto-generator, +5/sec, cost 500, ×1.2, scale 3
+- Volvox (photosynthesis) — renamed from "Photosynthesis", id unchanged: auto-generator, +5/sec, cost 500, ×1.2, scale 3
 - **Design note**: `effect` (string for UI) vs `increment` (number for logic) kept separate — display decoupled from math
 - **Design note**: string ids used as keys (will map to ownership counts in gameState)
 - Cost formula: `baseCost × costMultiplier ^ owned` (2nd Amino Acids = 10 × 1.15¹ = 11.5)
@@ -192,7 +192,8 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `src/index.css` — `font-family: 'Exo 2', sans-serif` on `*` selector → applies globally
 - Choice: Exo 2 only (no font mixing) — clean and consistent throughout
 
-**Photosynthesis element redrawn as a Volvox colony (inline SVG) — all 3 variants are now SVG**
+**Volvox (upgrade display name) — inline SVG colony + Photosynthesis-to-Volvox rename**
+- Display name only: `upgrades.js` `name: 'Photosynthesis'` → `'Volvox'`. **`id` stays `photosynthesis`** — it is the `ownedUpgrades` state key and the link to the `.float-photo` variant (same pattern as Amoeba rename). `effect`/`baseCost`/`costMultiplier`/`requireScale` untouched, so no save/balance impact.
 - `src/components/shapes/VolvoxShape.jsx` (NEW) — translucent gel sphere (r=40) + 3 asymmetric daughter colonies + 18 rim cells (r=2.5) + 9 dimmer inner cells (r=2). Draw order back-to-front: sphere → daughters → inner ring → rim. The **dimmer inner ring at a smaller radius is what sells the sphere as 3D** rather than a flat disc.
 - **Rim cells are computed, not hardcoded** — a `ring(count, radius, dotR, startDeg)` helper returns `{cx: 50 + r·cos θ, cy: 50 + r·sin θ}`; the inner ring is offset by half a step (`startDeg=20`) so the two rings don't line up spoke-on-spoke. 27 hand-written circles would have been unreadable and unmaintainable.
 - `VolvoxShape` takes `rotation` like the other two — the shapes map passes it to *every* shape. It matters here despite near-radial symmetry because the daughter colonies are placed asymmetrically.
@@ -206,6 +207,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - `src/components/shapes/AmoebaShape.jsx` (NEW) — irregular closed bezier `<path>` body (uneven bulges = pseudopods, deliberately asymmetric so it reads as something that crawls) + 3 vacuoles + off-centre nucleus (48,48 r=11) + 5 granules. Repeated circles live in `vacuoles`/`granules` arrays so coordinates read as data. Draw order outside-in (body → vacuoles → nucleus → granules) so organelles always paint over cytoplasm.
 - ⚠️ **Converting a CSS-blob variant to SVG means STRIPPING the blob, not just re-tinting it.** `.float-cell` still had `background`, `box-shadow`, inherited `border-radius: 50%`, plus `::before` (second lobe) and `::after` (nucleus). Swapping only the glow would have left a blue circle + lobe + dot painting *behind* the green amoeba. Full strip needed: `background: none`, `border-radius: 0`, and delete both pseudo-element rules — same shape as the `.float-amino` conversion. Verified after: bg `rgba(0,0,0,0)`, box-shadow `none`, radius `0px`, both pseudo-elements `0px×0px` transparent.
 - `AmoebaShape` takes `rotation` like `AminoShape` — the shapes map passes `rotation={m.rotation}` to *every* shape, so omitting the prop would have made all amoebas share one angle while amino acids varied.
+- ✅ **Amoeba recolored blue** — repaleted from green to blue (MEMBRANE/CYTOPLASM/VACUOLE/NUCLEUS/GRANULE constants remapped in `AmoebaShape.jsx`). Same lightness/alpha steps preserve glow radius + visual hierarchy; also updated `.float-cell drop-shadow` in `floating-elements.css` to blue `rgba(150,200,230,0.5)` to match (otherwise amoeba would still glow green around blue body). Verified: no green left anywhere in the SVG, membrane/cytoplasm/nucleus/glow all blue, no console errors.
 - ✅ **RESOLVED — amoeba was too small** (shipped at `DEFAULT_SIZE = [20, 35]`, user reported "ตัวจิ๋วเกินไป"). Now `'float-cell': [55, 85]`, giving 68–84px containers vs 27–34.5px before (~2.5× linear):
 
   | feature | at 20–35 | at 55–85 |
@@ -269,13 +271,13 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 **Phase E — Scale progression** ✅ VERIFIED
 - Scale 1 (Primordial Soup, threshold 0): start here, Amino Acids available
 - Scale 2 (Single Cell, threshold 100): modal triggers on unlock, Cell Division unlocked + visible
-- Scale 3 (Multicellular Life, threshold 1000): modal triggers on unlock, Photosynthesis unlocked + visible
+- Scale 3 (Multicellular Life, threshold 1000): modal triggers on unlock, Volvox unlocked + visible
 - All modals dismiss cleanly, no re-triggers, scale progression smooth
 
 **Phase F — Floating organisms + game loop** ✅ VERIFIED
 - Amino Acids purchase: 1 green molecule spawns (position stable, drifts smoothly)
 - Cell Division purchase: 1 blue cell molecule spawns (2-lobe split cell, nucleus)
-- Photosynthesis purchase: 1 yellow-green energy orb spawns (sun + leaf motes)
+- Volvox purchase: 1 translucent green Volvox colony spawns (sphere + daughter colonies + rim cells)
 - All 3 elements coexist without overlap (seeded RNG prevents collision)
 - Deterministic positioning: same `id` → same coordinates across rebuilds (no teleport)
 - Drift animation begins immediately (negative delay applied)
@@ -341,7 +343,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - [x] E2 — `src/components/ScaleUnlockModal.jsx` — modal with scale name + flavor text + dismiss button (no re-trigger; guarded by reducer state + nextScale-only check)
 - [x] E3 — `Universe.jsx` visual changes per scale (color / label) ✅ background gradient (per-scale, 1.5s fade via `@property`) + scale-name label under pulse-circle
 - [x] E4 — Verify Scale 2: 100 biomass → modal ✅, Cell Division available ✅, background fades to ocean-blue ✅, label "Single Cell" ✅
-- [x] E5 — Verify Scale 3: 1,000 biomass → modal ✅, Photosynthesis available ✅, background fades to green/turquoise ✅, label "Multicellular Life" ✅
+- [x] E5 — Verify Scale 3: 1,000 biomass → modal ✅, Volvox available ✅, background fades to green/turquoise ✅, label "Multicellular Life" ✅
 
 ### Phase F: Polish & End-to-End Test
 - [x] F1 — Play full loop 0 → Scale 3 ✅ VERIFIED (no bugs found; smooth progression through all scales + all upgrades functional)
@@ -367,7 +369,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 |---------|-------------|------|--------|-----------|------------|
 | Amino Acids | Scale 1 | Auto-generator | +0.2 biomass/sec | 10 | 1.15 |
 | Amoeba (id `cellDivision`) | Scale 2 | Click multiplier | +1 biomass/click | 50 | 1.30 |
-| Photosynthesis | Scale 3 | Auto-generator | +5 biomass/sec | 500 | 1.20 |
+| Volvox (photosynthesis) | Scale 3 | Auto-generator | +5 biomass/sec | 500 | 1.20 |
 
 **Cost formula:** `cost = baseCost × (multiplier ^ owned)`
 
@@ -378,7 +380,7 @@ Buy Amino Acids → +0.2 biomass/sec
 Reach 100 → unlock Scale 2 (Single Cell)
 Buy Amoeba → +2 biomass/click
 Reach 1,000 → unlock Scale 3 (Multicellular Life)
-Buy Photosynthesis → +5 biomass/sec
+Buy Volvox → +5 biomass/sec
 → End of MVP 1.0
 ```
 

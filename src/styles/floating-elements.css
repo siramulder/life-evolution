@@ -57,7 +57,8 @@
 .float-cell {
   background: none;
   border-radius: 0; /* opt out of the base .float-molecule circle */
-  filter: drop-shadow(0 0 7px rgba(180, 230, 150, 0.5));
+  /* Blue to match AmoebaShape's MEMBRANE color. */
+  filter: drop-shadow(0 0 7px rgba(150, 200, 230, 0.5));
 }
 
 .float-cell svg {

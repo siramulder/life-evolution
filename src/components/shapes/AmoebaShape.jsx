@@ -15,12 +15,14 @@
 // that clip. It also cannot collide with the parent's floatAround animation,
 // which owns `transform` on the container div (a different element).
 
-const MEMBRANE = 'rgba(180, 230, 150, 0.75)'
-const CYTOPLASM = 'rgba(140, 200, 120, 0.3)'
-const VACUOLE = 'rgba(220, 245, 200, 0.35)'
-const NUCLEUS = 'rgba(100, 170, 90, 0.7)'
-const NUCLEUS_EDGE = 'rgba(200, 240, 180, 0.5)'
-const GRANULE = 'rgba(200, 240, 180, 0.4)'
+// Blue palette — same lightness/alpha steps as the original green, so the
+// glow radius and layering still read correctly, only the hue changed.
+const MEMBRANE = 'rgba(150, 200, 230, 0.75)'
+const CYTOPLASM = 'rgba(120, 160, 200, 0.3)'
+const VACUOLE = 'rgba(200, 225, 245, 0.35)'
+const NUCLEUS = 'rgba(90, 130, 170, 0.7)'
+const NUCLEUS_EDGE = 'rgba(180, 210, 240, 0.5)'
+const GRANULE = 'rgba(180, 210, 240, 0.4)'
 
 // Water vacuoles — varied sizes, scattered asymmetrically.
 const vacuoles = [

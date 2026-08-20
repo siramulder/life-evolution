@@ -35,8 +35,10 @@ export const upgrades = [
     requireScale: 2,
   },
   {
+    // id stays 'photosynthesis' — it is the state key in ownedUpgrades and the
+    // link to the .float-photo variant. Only the displayed `name` changed.
     id: 'photosynthesis',
-    name: 'Photosynthesis',
+    name: 'Volvox',
     type: 'auto-generator',
     effect: '+5 biomass/sec',
     increment: 5,
