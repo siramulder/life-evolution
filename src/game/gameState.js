@@ -11,6 +11,12 @@ import { scales } from './scales'
 // Result: { aminoAcids: 0, cellDivision: 0, photosynthesis: 0 }
 const ownedUpgrades = Object.fromEntries(upgrades.map((u) => [u.id, 0]))
 
+// MVP 1.0's win condition: this much biomass while already at the final scale.
+// Lives here rather than in scales.js on purpose -- it is a finish line INSIDE
+// scale 3, not the threshold of a 4th scale, so it must not be walked by the
+// scale-unlock logic that iterates `scales`.
+const ENDING_BIOMASS = 5000
+
 export const initialState = {
   biomass: 0, // current biomass — the core currency, spent on upgrades
   perClick: 1, // biomass gained per manual click (base = 1)
@@ -19,6 +25,10 @@ export const initialState = {
   unlockedScales: [1], // scales reached so far; starts with Primordial Soup
   ownedUpgrades, // how many of each upgrade the player owns
   pendingModalScale: null, // scale id awaiting a celebration modal (null = none)
+
+  // Two flags, deliberately NOT collapsed into one (see the TICK branch below):
+  hasEnded: false, // one-way latch — true forever once the ending has fired
+  pendingEnding: false, // ending modal awaiting dismissal; cleared by DISMISS_ENDING
 }
 
 // gameReducer — the ONLY place game state changes.
@@ -58,7 +68,27 @@ export function gameReducer(state, action) {
         }
       }
 
-      // No unlock this tick — just add the biomass.
+      // Win condition — checked AFTER the scale-unlock branch above, which
+      // returns early. Uses `newBiomass` (this tick's value), not state.biomass,
+      // so the ending fires on the same tick the player crosses the line.
+      //
+      // ⚠️ TWO FLAGS, ON PURPOSE — do not collapse into one. Buying an upgrade
+      // after the ending can drop biomass back under ENDING_BIOMASS and then
+      // climb over it again; with a single flag the modal would re-fire on every
+      // crossing. `hasEnded` is a one-way latch that never returns to false, and
+      // it alone gates this branch — that is what makes the ending fire exactly
+      // once. `pendingEnding` only drives the modal and is cleared by
+      // DISMISS_ENDING, so dismissing can never re-arm the trigger.
+      if (!state.hasEnded && state.currentScale === 3 && newBiomass >= ENDING_BIOMASS) {
+        return {
+          ...state,
+          biomass: newBiomass,
+          hasEnded: true,
+          pendingEnding: true,
+        }
+      }
+
+      // No unlock or ending this tick — just add the biomass.
       return {
         ...state,
         biomass: newBiomass,
@@ -115,6 +145,16 @@ export function gameReducer(state, action) {
       return {
         ...state,
         pendingModalScale: null,
+      }
+
+    // Player closed the ending modal — clear ONLY pendingEnding.
+    // `hasEnded` is deliberately left true: it is the latch that stops TICK
+    // from ever re-raising the ending, so resetting it here would reintroduce
+    // exactly the repeat-fire bug the two-flag split exists to prevent.
+    case 'DISMISS_ENDING':
+      return {
+        ...state,
+        pendingEnding: false,
       }
 
     // Unknown action: return state untouched.

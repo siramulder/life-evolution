@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Amoeba recolored to blue; Photosynthesis renamed to Volvox
+> Last updated: Phase H1 done (reducer win-condition, 29 Vitest cases passing); Vitest added; H2/H3 pending
 
 ---
 
@@ -286,7 +286,200 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 ### 🔜 Next (Phase 2+, if desired)
 
 **Phase G** — Balancing/tuning: upgrade costs, biomass per-click scaling, progression pacing
-**Phase H** — End-game content (prestige / reset) or expansion to Scale 4+
+
+---
+
+### 🏁 Phase H — End-game (ship the ending)
+
+> ⚠️ **IN PROGRESS — H1 done (2026-09-07), H2/H3 NOT started.** The whole feature
+> was built once on 2026-08-28 and reverted at the user's request — the design was
+> agreed, the go-ahead to code never was. H1 was later rebuilt on explicit
+> instruction. **H2 and H3 still require their own explicit go-ahead**; the modal
+> wording and visual treatment (open questions below) are undecided.
+
+**Goal**: MVP 1.0 gets a real finish. Reach **5,000 biomass while at Scale 3** →
+one-time ending modal → dismiss → **game continues completely normally**.
+Full design + rationale in the `🏁 PLANNED — End-game condition` section below.
+
+#### Decided ✅
+- Ends at Scale 3. **No Scale 4+, no prestige** (see rejected list at the bottom).
+- Trigger: biomass ≥ 5,000 while `currentScale === 3`.
+- After dismissal, clicking / buying / idle ticking all keep working.
+
+#### Still open ❓ — ask before building
+- **Ending modal wording.** The reverted attempt invented copy ("You did it 🎉",
+  "Keep Playing") that was never approved. Needs the user's own text.
+- **Visual treatment.** Reusing `modal.css` as-is makes the ending look identical
+  to `Scale Unlocked!` apart from the words. Is a distinct look wanted (different
+  accent colour, bigger card, animation), or is text-only difference fine?
+
+#### Tasks
+
+**H1 — Reducer: win-condition state** ([gameState.js](src/game/gameState.js)) ✅ DONE 2026-09-07
+- `const ENDING_BIOMASS = 5000` — kept in `gameState.js`, **not** `scales.js`:
+  it is a finish line *inside* Scale 3, not a 4th scale threshold.
+- `initialState` gained `hasEnded: false`, `pendingEnding: false`.
+- In `TICK`, after the existing scale-unlock branch (which returns early, so an
+  unlock tick can never also fire the ending): if
+  `!hasEnded && currentScale === 3 && newBiomass >= ENDING_BIOMASS` → set both flags.
+  Uses `newBiomass` (post-tick) so the ending fires on the tick that crosses the line.
+- New `DISMISS_ENDING` action clears `pendingEnding` only; `hasEnded` stays true.
+- ⚠️ **Two flags, not one.** Buying upgrades after the ending can drop biomass back
+  under 5,000 and climb over it again; a single flag re-shows the modal every time.
+  `hasEnded` is one-way and never resets — that is what makes it fire exactly once.
+  `pendingEnding` drives the modal so the two cannot drift apart.
+- **Verified by automated test: 29 cases, all passing** (`npm test`, see the Testing
+  section). Includes the re-fire regression the two-flag design exists to prevent,
+  proven both with a hand-set biomass drop and through real `BUY_UPGRADE` dispatches.
+  No UI exists yet — H1 is reducer-only, and nothing in `App.jsx` was touched.
+- Observation, deliberately left as specced: `currentScale === 3` hardcodes the final
+  scale. Correct today (Scale 4+ is rejected), but if that is ever revisited this
+  line keeps firing at 3. `scales[scales.length - 1].id` would self-maintain.
+
+**H2 — `EndingModal` component** (`src/components/EndingModal.jsx`, new)
+- Props `{ show, onDismiss }`; `if (!show) return null` — same shape as
+  `ScaleUnlockModal`, which is driven purely by whether its prop is set.
+- Separate component rather than a flag on `ScaleUnlockModal`: its content is not
+  a `scale` object, and dismissing it does not advance anything.
+- Can reuse `modal.css` wholesale (`.modal-overlay` / `.modal-content` /
+  `.modal-title` / `.modal-continue`) → **no new CSS** unless the open visual
+  question above says otherwise.
+
+**H3 — Wire into App** ([App.jsx](src/App.jsx))
+- Render after `<ScaleUnlockModal>`, `show={state.pendingEnding}`,
+  `onDismiss={() => dispatch({ type: 'DISMISS_ENDING' })}`.
+
+**H4 — Verify** (all four were confirmed working in the reverted build)
+1. Reach Scale 3, push past 5,000 → ending modal appears.
+2. Dismiss → modal closes, biomass keeps climbing.
+3. Buy an upgrade *after* the ending → purchase still works.
+4. Stay well above 5,000 and spend down/up → modal never reappears.
+
+#### Cross-dependencies
+- 🔗 **Save/load (backlog #4) must persist `hasEnded`** — otherwise every reload
+  re-triggers the ending for a returning player. Whichever ships second has to
+  account for the other.
+- 🔗 **Compact formatting (backlog #3)** renders the threshold as `5.00K`. Harmless,
+  but the ending copy should not hard-code the string "5000".
+- 🔗 **Phase G balancing** — do not raise 5,000 without re-checking the pacing table
+  below; the income curve is already flattening by then.
+
+#### Rejected alternatives (do not re-propose without asking)
+- **Scale 4+ expansion** — would need the flat-increment problem fixed first
+  (income grows logarithmically; see pacing data below), i.e. a much larger job.
+- **Prestige / reset loop** — deliberately out of scope for MVP 1.0.
+
+---
+
+### 📋 Minor improvements backlog (post-MVP 1.0)
+
+Shortlist agreed with the user. Ordered by recommendation, not priority-of-value:
+
+1. **Fix the `+N` bubble key collision** — one line, clears the open bug below (`useRef(0)` counter instead of `Date.now() + Math.random()`).
+2. **Show `perClick` in Stats** — real information gap: buying Amoeba 5× makes each click worth 6, and **nothing on screen ever says so**. `Stats` shows biomass + `perSec` only.
+3. **Compact number formatting** — SPEC AGREED, NOT YET BUILT. See below. (The ending itself is **Phase H** above, not part of this backlog.)
+4. **Save/load to localStorage** — highest player value; a refresh currently wipes everything ([gameState.js](src/game/gameState.js) says so in its header comment). Prerequisite worth doing first: `perSec`/`perClick` are *stored* in state but also *derivable* from `ownedUpgrades`, so a save should persist only `biomass` + `ownedUpgrades` + `unlockedScales` and recompute the rest — otherwise a future `increment` tweak leaves old saves inconsistent.
+5. **`prefers-reduced-motion`** — five simultaneous animation systems (`floatAround`, `pulse`, `riseUp`, `drift`, `+N` bubbles). Same class of concern as the full-screen strobe already removed for WCAG 2.3.1; pure CSS.
+
+Also noted: **`UNLOCK_SCALE` in the reducer is dead code** — nothing dispatches it, `TICK` unlocks inline. Delete it with whichever item touches the reducer first (likely save/load).
+
+---
+
+### 📐 PLANNED — Compact number formatting (spec agreed, implementation NOT started)
+
+> Requirements gathered from the user 2026-08-22. Display-only; `gameReducer` keeps
+> operating on exact floats and is not touched.
+
+**`src/game/format.js`** (new, pure, no deps) — one shared `compact()` core + four named
+wrappers so each call site reads for itself:
+
+| export | used by | rounding | below 1,000 |
+|---|---|---|---|
+| `fmtBiomass` | main counter | **floor** | 1 dec under 100, then integer |
+| `fmtRate` | `+N/sec` | floor | 1 dec under 100, then integer |
+| `fmtCost` | upgrade cards | **ceil** | integer |
+| `fmtClick` | `+N` bubbles | — | integer |
+
+**Tiers** (K/M/B/T, adaptive ~3 significant digits, trailing zeros KEPT for stable width):
+
+| range | output | example |
+|---|---|---|
+| 0 – 99.9 | 1 dec *(fractional variants)* / integer *(whole)* | `7.8` / `7` |
+| 100 – 999 | integer | `318` |
+| 1,000 – 9,999 | `X.XXK` | `1.00K`, `9.99K` |
+| 10,000 – 99,999 | `XX.XK` | `12.3K` |
+| 100,000 – 999,999 | `XXXK` | `123K` |
+| ≥ 1e6 | same 3-tier pattern, M → B → T | `1.23M` |
+
+⚠️ **Floor/ceil apply at the DISPLAYED precision, not just to the raw number.**
+Cost `1234.5` → `1.2345K` → ceil to 2dp → `1.24K`. Biomass `1239` → floor to 2dp → `1.23K`.
+This is what makes the affordability guarantee hold *at every magnitude* rather than only
+under 1,000: what you own is never overstated, what you owe is never understated, so **the
+display can never show an affordable-looking purchase that the reducer then refuses.**
+
+⚠️ **The decimal under 100 is load-bearing, not cosmetic.** Biomass ticks by `perSec/10`
+every 100ms; with only Amino Acids (+0.2/sec) that is +0.02/tick. Round to integers below
+1,000 and the counter freezes at `0` for five seconds then jumps — early-game passive income
+stops *feeling* alive. Hence 1 decimal under 100 for biomass and rate.
+
+⚠️ **Do NOT apply that decimal rule to costs or `+N` bubbles.** Those values are always
+whole; the rule would render `Cost: 11.5` and `+6.0`, which is worse than today. Per-site
+split is deliberate (user confirmed).
+
+**Also replaces a real inconsistency**: [UpgradeList.jsx](src/components/UpgradeList.jsx)
+currently uses `cost.toFixed(0)`, which rounds to *nearest* — so it can display a cost
+*lower* than what is charged (2nd Amino Acids costs `10 × 1.15 = 11.5`). At 11.2 biomass the
+card reads `Cost: 11` next to `11.2` with the button still disabled. `fmtCost` uses ceil.
+
+**Files to touch**: `src/game/format.js` (new) · [Stats.jsx:8-9](src/components/Stats.jsx)
+(2 sites) · [UpgradeList.jsx:23](src/components/UpgradeList.jsx) (1 site) ·
+[App.jsx:84](src/App.jsx) (1 site) · [stats.css:19](src/styles/stats.css)
+(`font-variant-numeric: tabular-nums` — the counter is centred at 3.5rem via
+`translateX(-50%)`, so digit-width changes shift it sideways).
+
+**Verification plan** — items 1–2 are now **Vitest cases** (`src/game/format.test.js`),
+not eyeball checks; Vitest has been in the project since 2026-09-12 (see Testing section):
+1. Boundaries: `0, 0.02, 99.9, 100, 999, 999.99, 1000, 1234.5, 9999, 10000, 99999, 100000, 999999, 1e6, 1e9`
+   — one `it.each` table asserting the exact string from the tier table above.
+2. **Affordability invariant as a real assertion** — sweep biomass/cost pairs and confirm
+   `displayed-affordable === reducer-affordable` for every one. Write it as a Vitest test
+   that imports `gameReducer` alongside the formatter: for each pair, compare
+   `fmtBiomass(b) >= fmtCost(c)` (parsed back) against whether `BUY_UPGRADE` actually
+   succeeds. This is the claim worth proving, and a loop of a few thousand pairs is free.
+3. Early-game regression: with only Amino Acids, the counter still visibly moves every tick
+   — testable too: `fmtBiomass(0.02) !== fmtBiomass(0.04)`.
+4. Live browser check at scale 3 + confirm the centred counter no longer shifts as it climbs
+   (the one item that genuinely needs eyes — width jitter is a rendering property).
+
+---
+
+### 📉 Pacing data — why the game plateaus (simulated 2026-08-28)
+
+> Tasks and design for the ending live in **Phase H** above; this section is the
+> supporting measurement, kept separate so there is only one place to update.
+
+**⚠️ Read this before tuning the 5,000 ending threshold, touching upgrade costs
+(Phase G), or proposing new scales.** Simulated against the real numbers in
+`upgrades.js`:
+
+| elapsed | perSec | owned (amino/amoeba/volvox) |
+|---|---|---|
+| 10 min | 79 | 45/18/14 |
+| 30 min | 121 | 57/24/22 |
+| 60 min | 148 | 63/28/27 |
+| 110 min | 169 | 68/31/31 |
+
+- Scale 3 is reached in **3–8 minutes** depending on click rate.
+- From minute 10 to minute 110 — **11× the play time — income barely doubles.**
+- **Cause: costs grow exponentially, income per purchase is flat.** The nth Amino
+  Acids costs `10 × 1.15ⁿ` but always gives `+0.2/sec`, so the price of one extra
+  biomass/sec explodes (owned 0 → 50; owned 20 → 818; owned 40 → 13.4K; owned 60 →
+  219K). Income ends up growing like the *logarithm* of spending.
+- **Consequence**: any win threshold much beyond ~5,000 becomes a long grind. 5,000
+  sits comfortably inside the healthy part of the curve; do not raise it without
+  first fixing the flat-increment problem.
+- Zero clicking = the game never starts (perSec is 0 until the first Amino Acids
+  purchase, which requires clicks).
 
 ---
 
@@ -396,6 +589,43 @@ Buy Volvox → +5 biomass/sec
 | State | `useReducer` in App.jsx |
 | Backend | None |
 | Database | None (in-memory only, resets on refresh) |
+| Testing | **Vitest** (added 2026-09-12, see below) |
+
+---
+
+## Testing
+
+The project has **Vitest** as a devDependency (added with H1, 2026-09-12).
+
+```bash
+npm test            # run once (vitest run)
+npm run test:watch  # re-run on file change
+```
+
+**`src/game/gameState.test.js`** — 29 cases against the real `gameReducer`:
+
+| group | covers |
+|---|---|
+| `initialState` | new ending flags present + false; every pre-existing field intact; `ownedUpgrades` derived from `upgrades.js` |
+| ending trigger | fires on the tick that *crosses* 5,000 using post-tick biomass; `>=` not `>`; scale progression untouched when it fires; no mutation of input state |
+| scale guard | 6,000 biomass on scale 1 / 2 → never fires |
+| `DISMISS_ENDING` | clears `pendingEnding`, keeps `hasEnded`; safe to dispatch repeatedly |
+| **never re-triggers** | 300 ticks above the line after dismiss; spend below 5,000 then climb back (hand-set **and** via real `BUY_UPGRADE`) → stays dismissed |
+| other actions | `CLICK` crossing 5,000 and `BUY_UPGRADE` never touch the ending flags |
+| regression | scale 2/3 unlocks + `pendingModalScale`; no duplicate `unlockedScales` over 300 ticks; `DISMISS_MODAL`; `CLICK` adds `perClick`; `BUY_UPGRADE` charges `baseCost × multiplier^owned`, refuses when short, click-multiplier raises `perClick` not `perSec` |
+
+The test file builds state with its **own local `makeState()` factory** (not
+imported), so each case sets up exactly the situation it needs.
+
+⚠️ **Every change to `gameReducer` must pass `npm test` before it is called done.**
+This is the only automated safety net the project has; the reducer is the single
+place game state changes, so a regression there breaks everything downstream.
+
+🐛 **Gotcha — don't try to unit-test the reducer with plain `node`.** The source uses
+extensionless imports (`from './upgrades'`), which Vite resolves but bare node
+rejects (`ERR_MODULE_NOT_FOUND`). Vitest uses Vite's resolver, so it just works.
+An earlier ad-hoc node harness had to copy the modules to a scratch dir with
+`.js` appended to every specifier — unnecessary now.
 
 ---
 
