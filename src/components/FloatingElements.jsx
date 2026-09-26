@@ -40,7 +40,13 @@ const sizeRanges = {
 // upgrade of a given type. Generic: `variant` is a CSS modifier class picking
 // the look (amino / cell / photo); `seed` offsets the RNG so different upgrade
 // types don't spawn at identical coordinates.
-export function FloatingElements({ count, variant, seed = 0 }) {
+//
+// `zoom` (1 = native size) shrinks this whole layer as the world zooms out on a
+// scale-up — see zoomFor() in App.jsx. It is applied at RENDER time, deliberately
+// NOT inside the useMemo below: `items` must not recompute when zoom changes, or
+// every element would re-roll and teleport. Keeping it out also means the seeded
+// position / rotation / duration / delay values are untouched by zooming.
+export function FloatingElements({ count, variant, seed = 0, zoom = 1 }) {
   const Shape = shapes[variant] // undefined → plain div, same as before
   const [minSize, maxSize] = sizeRanges[variant] ?? DEFAULT_SIZE
 
@@ -75,8 +81,8 @@ export function FloatingElements({ count, variant, seed = 0 }) {
           style={{
             left: `${m.startX}%`,
             top: `${m.startY}%`,
-            width: `${m.size}px`,
-            height: `${m.size}px`,
+            width: `${m.size * zoom}px`,
+            height: `${m.size * zoom}px`,
             animationDuration: `${m.duration}s`,
             animationDelay: `${m.delay}s`,
           }}

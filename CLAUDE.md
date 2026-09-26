@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Phase H1 done (reducer win-condition, 29 Vitest cases passing); Vitest added; H2/H3 pending
+> Last updated: zoom-out on scale change (earlier-scale organisms shrink ×0.5/scale); Phase H1 done + Vitest, H2/H3 pending
 
 ---
 
@@ -70,11 +70,21 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 - Phase E2 (ScaleUnlockModal) will wire up the visual "congratulations" popup on unlock
 
 **Floating organisms — animated elements for all 3 upgrades (Amino Acids, Amoeba, Volvox)**
-- `src/components/FloatingElements.jsx` — generic reusable component: `count` (owned), `variant` (CSS class), `seed` (RNG offset); renders N elements using deterministic seeding so existing ones keep identical configs when count grows → only new ones appear
+- `src/components/FloatingElements.jsx` — generic reusable component: `count` (owned), `variant` (CSS class), `seed` (RNG offset), `zoom` (scale-distance shrink, see the zoom-out entry below); renders N elements using deterministic seeding so existing ones keep identical configs when count grows → only new ones appear
 - `src/styles/floating-elements.css` — 3 variants: `.float-amino` (~~green molecule + 2 satellite atoms~~ → **now an inline-SVG glycine skeleton, see the SVG entry above**), `.float-cell` (~~blue cell with 2 lobes overlapping mid-mitosis + nucleus~~ → **now an inline-SVG amoeba, see the Amoeba entry above**), `.float-photo` (~~yellow-green energy orb + sun mote + leaf mote~~ → **now an inline-SVG Volvox colony, see the Volvox entry above**); **all three are inline SVG now — no CSS-blob variants remain**; all share `@keyframes floatAround` drift path; negative delay → start moving immediately
-- `src/App.jsx` — renders 3 FloatingElements (amino seed=0, cell seed=1000, photo seed=2000) so each type's RNG stream is offset → no overlap; counts tied to `state.ownedUpgrades` for each upgrade
+- `src/App.jsx` — renders 3 FloatingElements (amino seed=0, cell seed=1000, photo seed=2000) so each type's RNG stream is offset → no overlap; counts tied to `state.ownedUpgrades` for each upgrade; each also gets a `zoom` from `zoomFor()` (see zoom-out entry below)
 - **Config-driven design**: all 3 upgrade types share one component + one keyframe, differing only in `.float-*` class selector → single source of truth for RNG logic + drift behavior
 - **Regression-safe**: Amino Acids elements **maintain exact same coordinates as before** (seed unchanged) — only added Cell + Photo layers
+
+**Zoom-out on scale change — organisms from earlier scales shrink** (2026-09-26)
+- Advancing a scale pulls the "camera" back: an amino acid next to a Volvox colony should read as a speck. Size multiplier = `ZOOM_PER_SCALE ** (currentScale − nativeScale)` with `ZOOM_PER_SCALE = 0.5`, so the **current** scale's own organism is always full size and each scale of distance behind it halves.
+- `src/App.jsx` — `ZOOM_PER_SCALE` + `zoomFor(native, current)`; `nativeScale` map is **derived from `upgrades.js` `requireScale`** (`Object.fromEntries`), not hardcoded, so it can't drift. `Math.max(0, …)` guards against magnifying an organism from an unreached scale.
+- `src/components/FloatingElements.jsx` — new `zoom` prop (default 1), multiplied into the inline `width`/`height`.
+- ⚠️ **`zoom` is applied at RENDER, deliberately NOT inside the `useMemo` and NOT in its dep array.** Putting it in deps would recompute `items` on every scale change → every element re-rolls and teleports. Verified: across a scale change, `left`/`top`/`animationDuration`/`animationDelay`/rotation matrix are **byte-identical**; only width/height move.
+- ⚠️ **Animates `width`/`height`, NOT `transform: scale()`** — the `floatAround` keyframe owns `transform` on that element, and a running animation outranks a normal declaration, so a `scale()` there silently no-ops (same trap as the rotation gotcha below). The SVG child is `width:100%/height:100%` so it follows for free.
+- `transition: width 1.5s, height 1.5s` on `.float-molecule` — **1.5s matches the background gradient cross-fade** so the shrink and the colour shift read as one "the world changed" motion, not two events.
+- Measured across a full playthrough: amino 63.92/69.15 → 31.96/34.58 → **15.97/17.29** (×1 → ×0.5 → ×0.25); amoeba 69.22 → 34.61 (×1 → ×0.5); Volvox 66.29 (×1). All ratios exact to 4 dp.
+- 🔜 Not done: the `drop-shadow` glow is a fixed px value, so a 16px amino keeps a 7px halo (proportionally huge — reads as a soft dot). Scale the glow with `zoom` if it looks wrong.
 
 **Amino Acid molecules — floating visual, one per owned Amino Acids upgrade (merged into FloatingElements)**
 - `src/components/AminoAcids.jsx` — takes `count` prop; renders `count` green molecules drifting via `@keyframes floatAround`; uses **negative animation-delay** (`0..-30s`) so molecules start moving immediately on spawn (not a static pause) — each molecule phases into animation at a different point, creating visual spread without sync drift

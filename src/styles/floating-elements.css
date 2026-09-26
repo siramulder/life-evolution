@@ -21,6 +21,16 @@
   animation-name: floatAround;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
+
+  /* Zoom-out on scale change (see zoomFor() in App.jsx). 1.5s deliberately
+     matches the background gradient cross-fade, so the shrink and the colour
+     shift read as one "the world just changed" motion rather than two events.
+     Animating width/height, NOT transform: the floatAround keyframe above owns
+     `transform`, and a running animation outranks a normal declaration — a
+     transform:scale() here would silently do nothing (same trap as rotation). */
+  transition:
+    width 1.5s ease,
+    height 1.5s ease;
 }
 
 .float-molecule::before,
