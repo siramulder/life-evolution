@@ -1,0 +1,130 @@
+/* EndingModal — the completion screen.
+   Deliberately a separate stylesheet from modal.css with `ending-` prefixed
+   selectors: nothing here can touch the scale-unlock modal. Where that one is
+   a small blue-green "Scale Unlocked!" card, this is a larger gold/amber one,
+   so finishing the game does not look like just another scale-up. */
+
+.ending-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.78); /* slightly deeper than the scale modal */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 100; /* same band as .modal-overlay — above everything else */
+}
+
+/* Glass card, ~1.4x the scale-unlock card (that one is max-width 400px,
+   padding 32px 40px). Gold-tinted rather than neutral white. */
+.ending-card {
+  max-width: 560px;
+  padding: 46px 58px;
+  border-radius: 20px;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.09);
+  color: #ffffff;
+  text-align: center;
+
+  /* Two shadows: an outer amber halo and a faint inner rim highlight. The
+     halo is what the slow pulse below animates. */
+  box-shadow:
+    0 0 36px rgba(251, 191, 36, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  /* Entrance: soft scale + fade. Named endingRise so it cannot collide with
+     modalPop in modal.css. */
+  animation:
+    endingRise 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    endingGlow 3.6s ease-in-out 0.7s infinite;
+}
+
+.ending-title {
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: #fcd34d; /* amber — the accent that separates this from the blue-green modal */
+
+  /* Thai needs vertical room: ถ/ป/ล carry tone marks above and below the
+     baseline, and a tight line-height clips them. No letter-spacing either —
+     it separates Thai combining marks from their base character. */
+  line-height: 1.6;
+  letter-spacing: normal;
+
+  text-shadow: 0 2px 16px rgba(251, 191, 36, 0.35);
+  margin-bottom: 30px;
+}
+
+/* Continue button — gold, matching the card accent. Same label and role as
+   the scale modal's button, but never shares its selector. */
+.ending-continue {
+  padding: 12px 40px;
+  border: none;
+  border-radius: 10px;
+  background: #f59e0b;
+  color: #1f1300; /* dark text on gold reads better than white */
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ending-continue:hover {
+  background: #fbbf24;
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.45);
+}
+
+.ending-continue:focus-visible {
+  outline: 2px solid #fcd34d;
+  outline-offset: 3px;
+}
+
+/* Entrance — grow slightly + fade in. */
+@keyframes endingRise {
+  from {
+    transform: scale(0.88);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Idle glow — a slow breath on the halo only.
+   ⚠️ 3.6s per cycle = ~0.28Hz, far below the 3Hz floor of the WCAG 2.3.1
+   photosensitivity band, and the two keyframes are close in intensity so the
+   change reads as a swell rather than a blink. Do not shorten this or widen
+   the contrast between the two states — that is how it becomes a strobe.
+   Animates box-shadow only; `transform` is left alone so it cannot fight the
+   entrance animation above. */
+@keyframes endingGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 36px rgba(251, 191, 36, 0.22),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  50% {
+    box-shadow:
+      0 0 58px rgba(251, 191, 36, 0.38),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Respect the OS "reduce motion" setting: no entrance, no pulsing glow —
+   the card simply appears, fully styled and legible. */
+@media (prefers-reduced-motion: reduce) {
+  .ending-card {
+    animation: none;
+  }
+
+  .ending-continue {
+    transition: none;
+  }
+}

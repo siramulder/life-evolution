@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: zoom-out on scale change (earlier-scale organisms shrink ×0.5/scale); Phase H1 done + Vitest, H2/H3 pending
+> Last updated: Phase H2 done (EndingModal + gold ending-modal.css, 34 tests passing); H3 (wire into App) still pending
 
 ---
 
@@ -301,11 +301,12 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🏁 Phase H — End-game (ship the ending)
 
-> ⚠️ **IN PROGRESS — H1 done (2026-09-07), H2/H3 NOT started.** The whole feature
-> was built once on 2026-08-28 and reverted at the user's request — the design was
-> agreed, the go-ahead to code never was. H1 was later rebuilt on explicit
-> instruction. **H2 and H3 still require their own explicit go-ahead**; the modal
-> wording and visual treatment (open questions below) are undecided.
+> ⚠️ **IN PROGRESS — H1 done (2026-09-07), H2 done (2026-09-28), H3 NOT started.**
+> The whole feature was built once on 2026-08-28 and reverted at the user's request
+> — the design was agreed, the go-ahead to code never was. H1 and H2 were later
+> rebuilt on explicit, separate instructions. **H3 still requires its own explicit
+> go-ahead.** Nothing renders the modal yet: `EndingModal` exists but is not
+> imported anywhere, so the ending is invisible in-game until H3 lands.
 
 **Goal**: MVP 1.0 gets a real finish. Reach **5,000 biomass while at Scale 3** →
 one-time ending modal → dismiss → **game continues completely normally**.
@@ -316,12 +317,13 @@ Full design + rationale in the `🏁 PLANNED — End-game condition` section bel
 - Trigger: biomass ≥ 5,000 while `currentScale === 3`.
 - After dismissal, clicking / buying / idle ticking all keep working.
 
-#### Still open ❓ — ask before building
-- **Ending modal wording.** The reverted attempt invented copy ("You did it 🎉",
-  "Keep Playing") that was never approved. Needs the user's own text.
-- **Visual treatment.** Reusing `modal.css` as-is makes the ending look identical
-  to `Scale Unlocked!` apart from the words. Is a distinct look wanted (different
-  accent colour, bigger card, animation), or is text-only difference fine?
+#### Resolved ✅ (were open until 2026-09-28)
+- **Ending modal wording** → title is exactly **`ถึงเป้าหมายแล้ว!!`**, button reuses
+  `Continue` (same label as ScaleUnlockModal). ⚠️ **User-approved copy — do not
+  reword, do not add emoji, do not add extra sentences.** The earlier reverted
+  attempt invented "You did it 🎉" / "Keep Playing"; that copy is dead.
+- **Visual treatment** → distinct: its own `ending-modal.css`, gold/amber vs the
+  scale modal's blue-green, card 1.4× larger, own entrance + slow glow animation.
 
 #### Tasks
 
@@ -346,14 +348,38 @@ Full design + rationale in the `🏁 PLANNED — End-game condition` section bel
   scale. Correct today (Scale 4+ is rejected), but if that is ever revisited this
   line keeps firing at 3. `scales[scales.length - 1].id` would self-maintain.
 
-**H2 — `EndingModal` component** (`src/components/EndingModal.jsx`, new)
+**H2 — `EndingModal` component** (`src/components/EndingModal.jsx`, new) ✅ DONE 2026-09-28
 - Props `{ show, onDismiss }`; `if (!show) return null` — same shape as
   `ScaleUnlockModal`, which is driven purely by whether its prop is set.
 - Separate component rather than a flag on `ScaleUnlockModal`: its content is not
   a `scale` object, and dismissing it does not advance anything.
-- Can reuse `modal.css` wholesale (`.modal-overlay` / `.modal-content` /
-  `.modal-title` / `.modal-continue`) → **no new CSS** unless the open visual
-  question above says otherwise.
+- ⚠️ **Does NOT reuse `modal.css`** (an earlier plan said it could). It has its own
+  `src/styles/ending-modal.css` with **`ending-` prefixed selectors throughout**
+  (`ending-overlay` / `ending-card` / `ending-title` / `ending-continue`), sharing
+  no selector with `modal.css`. That isolation is the point: the scale-unlock modal
+  is live and must never be restyled by accident from the ending's stylesheet.
+- Keyframes are `endingRise` (entrance, 0.7s, once) and `endingGlow` (idle halo,
+  3.6s, infinite) — **deliberately not named `modalPop`**, which exists in
+  `modal.css`; duplicate `@keyframes` names would silently collide.
+- ⚠️ **The 3.6s glow must stay slow.** 3.6s ≈ 0.28Hz, ~11× below the 3Hz floor of
+  the WCAG 2.3.1 photosensitivity band, and the two keyframe states are close in
+  intensity so it reads as a swell. Shortening it or widening the contrast turns it
+  into a strobe — the same class of bug already fixed once on `.universe:active`.
+- `@media (prefers-reduced-motion: reduce)` kills both animations; the card just
+  appears, fully legible.
+- 🇹🇭 **Thai text renders via per-glyph fallback, verified not assumed.** The global
+  font is **Exo 2, which has no Thai glyphs**, so the title falls back to
+  `sans-serif` (Windows → Leelawadee UI / Segoe UI). Tested with a tofu check:
+  every glyph's advance width differs from a `U+E000` private-use box (24px), and
+  the three combining tone marks correctly measure 0 width. **No font override was
+  added** — none is needed, and changing the game font was explicitly out of scope.
+- ⚠️ **Two Thai typography rules in `.ending-title`, do not "tidy" them away**:
+  `line-height: 1.6` (tight line-height clips tone marks above/below the baseline)
+  and `letter-spacing: normal` (the scale modal uses `0.1em`, which would detach
+  Thai combining marks from their base character).
+- Verified by **5 component tests** in `EndingModal.test.jsx` (see Testing section):
+  empty render when `show=false`, title present when true, `onDismiss` fires exactly
+  once, button label, and no `5000` in rendered text. Full suite **34/34**.
 
 **H3 — Wire into App** ([App.jsx](src/App.jsx))
 - Render after `<ScaleUnlockModal>`, `show={state.pendingEnding}`,
@@ -605,14 +631,23 @@ Buy Volvox → +5 biomass/sec
 
 ## Testing
 
-The project has **Vitest** as a devDependency (added with H1, 2026-09-12).
+The project has **Vitest** as a devDependency (added with H1, 2026-09-12), plus
+**@testing-library/react + jsdom** for component tests (added with H2, 2026-09-28).
 
 ```bash
-npm test            # run once (vitest run)
+npm test            # run once (vitest run)  -> currently 34 tests in 2 files
 npm run test:watch  # re-run on file change
 ```
 
-**`src/game/gameState.test.js`** — 29 cases against the real `gameReducer`:
+⚠️ **jsdom is opted into PER FILE, not globally.** `EndingModal.test.jsx` carries a
+`@vitest-environment jsdom` docblock pragma; `gameState.test.js` deliberately stays
+on the default **node** environment (it tests a pure reducer and needs no DOM, and a
+global jsdom would slow it down for nothing). There is **no `vitest.config.*`**, and
+`vite.config.js` has no `test` key — so the defaults are what keep that split
+working. If a global environment is ever set, re-check that the reducer tests still
+run in node.
+
+**`src/game/gameState.test.js`** — 29 cases against the real `gameReducer` (node env):
 
 | group | covers |
 |---|---|
@@ -627,9 +662,19 @@ npm run test:watch  # re-run on file change
 The test file builds state with its **own local `makeState()` factory** (not
 imported), so each case sets up exactly the situation it needs.
 
+**`src/components/EndingModal.test.jsx`** — 5 cases (jsdom env): renders empty when
+`show={false}`; shows the approved title when true; `onDismiss` called **exactly
+once** on click; button label is `Continue`; rendered text contains no `5000`.
+
 ⚠️ **Every change to `gameReducer` must pass `npm test` before it is called done.**
 This is the only automated safety net the project has; the reducer is the single
 place game state changes, so a regression there breaks everything downstream.
+
+🐛 **Gotcha — jest-dom matchers are NOT registered.** `@testing-library/jest-dom` is
+in `package.json` but nothing imports it, so matchers like `toBeEmptyDOMElement`
+throw *"Invalid Chai property"*. Use plain assertions (`expect(container.innerHTML)
+.toBe('')`) or add a setup file first. The dependency is currently **unused** and
+could be dropped.
 
 🐛 **Gotcha — don't try to unit-test the reducer with plain `node`.** The source uses
 extensionless imports (`from './upgrades'`), which Vite resolves but bare node
@@ -656,12 +701,17 @@ life-evolution/
 │   │   ├── Universe.jsx         # clickable main area + scale-name label
 │   │   ├── Stats.jsx            # biomass counter + rate/sec
 │   │   ├── UpgradeList.jsx      # upgrade cards + buy buttons
-│   │   └── ScaleUnlockModal.jsx # popup on scale unlock
+│   │   ├── ScaleUnlockModal.jsx # popup on scale unlock
+│   │   ├── EndingModal.jsx      # H2 — completion modal (NOT wired up yet; H3)
+│   │   └── EndingModal.test.jsx # 5 component tests (jsdom via file pragma)
 │   ├── game/
 │   │   ├── gameState.js         # initial state + reducer
+│   │   ├── gameState.test.js    # 29 reducer tests (node env)
 │   │   ├── upgrades.js          # upgrade definitions
 │   │   └── scales.js            # scale definitions
 │   └── styles/
+│       ├── modal.css            # scale-unlock modal (blue-green) — do not mix
+│       ├── ending-modal.css     # ending modal (gold) — `ending-` selectors only
 │       └── *.css
 ├── index.html
 ├── package.json
