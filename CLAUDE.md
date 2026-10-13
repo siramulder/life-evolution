@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Phase H2 done (EndingModal + gold ending-modal.css, 34 tests passing); H3 (wire into App) still pending
+> Last updated: Phase H3 done + 11 App integration tests (45 total); H4 pending the user's visual pass
 
 ---
 
@@ -301,12 +301,12 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🏁 Phase H — End-game (ship the ending)
 
-> ⚠️ **IN PROGRESS — H1 done (2026-09-07), H2 done (2026-09-28), H3 NOT started.**
-> The whole feature was built once on 2026-08-28 and reverted at the user's request
-> — the design was agreed, the go-ahead to code never was. H1 and H2 were later
-> rebuilt on explicit, separate instructions. **H3 still requires its own explicit
-> go-ahead.** Nothing renders the modal yet: `EndingModal` exists but is not
-> imported anywhere, so the ending is invisible in-game until H3 lands.
+> ⚠️ **IN PROGRESS — H1 done (2026-09-07), H2 done (2026-09-28), H3 done
+> (2026-10-04). H4 (verify) still pending.** The whole feature was built once on
+> 2026-08-28 and reverted at the user's request — the design was agreed, the
+> go-ahead to code never was. H1/H2/H3 were later rebuilt on explicit, separate
+> instructions. The ending is now reachable in-game: reducer → `pendingEnding` →
+> `EndingModal`. **H4 still requires its own explicit go-ahead.**
 
 **Goal**: MVP 1.0 gets a real finish. Reach **5,000 biomass while at Scale 3** →
 one-time ending modal → dismiss → **game continues completely normally**.
@@ -381,15 +381,24 @@ Full design + rationale in the `🏁 PLANNED — End-game condition` section bel
   empty render when `show=false`, title present when true, `onDismiss` fires exactly
   once, button label, and no `5000` in rendered text. Full suite **34/34**.
 
-**H3 — Wire into App** ([App.jsx](src/App.jsx))
-- Render after `<ScaleUnlockModal>`, `show={state.pendingEnding}`,
+**H3 — Wire into App** ([App.jsx](src/App.jsx)) ✅ DONE 2026-10-04
+- Rendered after `<ScaleUnlockModal>`, `show={state.pendingEnding}`,
   `onDismiss={() => dispatch({ type: 'DISMISS_ENDING' })}`.
+- Total change: 2 lines imported/rendered in `App.jsx` and nothing else — the
+  reducer (H1) and component (H2) already did the work, they were simply not
+  connected. Full suite still 34/34; no test needed updating.
 
 **H4 — Verify** (all four were confirmed working in the reverted build)
 1. Reach Scale 3, push past 5,000 → ending modal appears.
 2. Dismiss → modal closes, biomass keeps climbing.
 3. Buy an upgrade *after* the ending → purchase still works.
 4. Stay well above 5,000 and spend down/up → modal never reappears.
+
+✅ **All four are now covered by automated integration tests** in
+`src/App.test.jsx` (2026-10-10): B2 / B3+B5 / B7 / B8 respectively, driving the
+real App with fake timers. H4 itself stays **pending the user's own visual
+pass** — the tests prove the state machine, not that the gold card actually
+looks right on screen.
 
 #### Cross-dependencies
 - 🔗 **Save/load (backlog #4) must persist `hasEnded`** — otherwise every reload
@@ -635,11 +644,12 @@ The project has **Vitest** as a devDependency (added with H1, 2026-09-12), plus
 **@testing-library/react + jsdom** for component tests (added with H2, 2026-09-28).
 
 ```bash
-npm test            # run once (vitest run)  -> currently 34 tests in 2 files
+npm test            # run once (vitest run)  -> currently 45 tests in 3 files
 npm run test:watch  # re-run on file change
 ```
 
-⚠️ **jsdom is opted into PER FILE, not globally.** `EndingModal.test.jsx` carries a
+⚠️ **jsdom is opted into PER FILE, not globally.** `EndingModal.test.jsx` and
+`App.test.jsx` each carry a
 `@vitest-environment jsdom` docblock pragma; `gameState.test.js` deliberately stays
 on the default **node** environment (it tests a pure reducer and needs no DOM, and a
 global jsdom would slow it down for nothing). There is **no `vitest.config.*`**, and
@@ -666,9 +676,40 @@ imported), so each case sets up exactly the situation it needs.
 `show={false}`; shows the approved title when true; `onDismiss` called **exactly
 once** on click; button label is `Continue`; rendered text contains no `5000`.
 
+**`src/App.test.jsx`** — 11 integration cases (jsdom env), added with H3. Drives the
+real `App` with `vi.useFakeTimers()` + `act()`, overriding **only** `initialState`
+via `vi.mock` so a run can start mid-game:
+
+| covers | |
+|---|---|
+| ending appears | no modal on first render; crossing 5,000 shows the approved title |
+| dismissal | Continue hides it; 30,000ms more ticks never bring it back |
+| game still live | biomass keeps rising; universe click earns; buying works (Owned +1, biomass −cost) |
+| **no re-fire** | spend below 5,000 then idle back over → stays dismissed |
+| scale modal intact | still fires at 100 and dismisses |
+| invariants | never two modals mounted at once; no `window.__dispatch`/`__state`; **zero `console.error`/`console.warn` in every case** |
+
+⚠️ **`vi.mock` overrides `initialState` through a getter + `vi.hoisted`**, not a
+plain object. `vi.mock` factories are hoisted above normal declarations, so a
+normal `const` would be in the temporal dead zone; and the factory runs **once**,
+so a static value could not vary per test. The getter reads a hoisted holder that
+each test sets before `render()`. `gameState.js` was not modified to make this work.
+
 ⚠️ **Every change to `gameReducer` must pass `npm test` before it is called done.**
 This is the only automated safety net the project has; the reducer is the single
 place game state changes, so a regression there breaks everything downstream.
+
+🐛 **Gotcha — driving timers needs `IS_REACT_ACT_ENVIRONMENT`.** Advancing fake
+timers inside `act()` logs *"The current testing environment is not configured to
+support act(...)"* on **every flush** unless the file sets
+`globalThis.IS_REACT_ACT_ENVIRONMENT = true`. With a console spy asserting silence,
+that is an instant cascade of failures. `App.test.jsx` sets it at the top.
+
+🐛 **Gotcha — in `afterEach`, tear down BEFORE asserting.** Putting
+`expect(errSpy).not.toHaveBeenCalled()` above `cleanup()` means a genuine failure
+skips teardown, leaking that test's DOM into the next one. One real bug then
+reports as many fake ones (it showed up here as *"expected 9 modals to be ≤ 1"*).
+Capture the spy records, tear down unconditionally, then assert.
 
 🐛 **Gotcha — jest-dom matchers are NOT registered.** `@testing-library/jest-dom` is
 in `package.json` but nothing imports it, so matchers like `toBeEmptyDOMElement`
@@ -690,6 +731,7 @@ An earlier ad-hoc node harness had to copy the modules to a scratch dir with
 life-evolution/
 ├── src/
 │   ├── App.jsx
+│   ├── App.test.jsx             # 11 integration tests (jsdom via file pragma)
 │   ├── main.jsx
 │   ├── components/
 │   │   ├── Background.jsx       # ambient bubbles + particles; per-scale gradient
@@ -702,7 +744,7 @@ life-evolution/
 │   │   ├── Stats.jsx            # biomass counter + rate/sec
 │   │   ├── UpgradeList.jsx      # upgrade cards + buy buttons
 │   │   ├── ScaleUnlockModal.jsx # popup on scale unlock
-│   │   ├── EndingModal.jsx      # H2 — completion modal (NOT wired up yet; H3)
+│   │   ├── EndingModal.jsx      # H2 — completion modal (wired into App, H3)
 │   │   └── EndingModal.test.jsx # 5 component tests (jsdom via file pragma)
 │   ├── game/
 │   │   ├── gameState.js         # initial state + reducer

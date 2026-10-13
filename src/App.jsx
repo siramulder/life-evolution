@@ -8,6 +8,7 @@ import { Universe } from './components/Universe'
 import { Stats } from './components/Stats'
 import { UpgradeList } from './components/UpgradeList'
 import { ScaleUnlockModal } from './components/ScaleUnlockModal'
+import { EndingModal } from './components/EndingModal'
 import './styles/floating.css'
 
 // --- Zoom-out on scale change -------------------------------------------------
@@ -107,6 +108,10 @@ function App() {
       <ScaleUnlockModal
         scale={modalScale}
         onDismiss={() => dispatch({ type: 'DISMISS_MODAL' })}
+      />
+      <EndingModal
+        show={state.pendingEnding}
+        onDismiss={() => dispatch({ type: 'DISMISS_ENDING' })}
       />
     </>
   )
