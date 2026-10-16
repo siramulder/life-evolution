@@ -9,6 +9,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react'
 import { act } from 'react'
 
+// jsdom has no canvas, so the real canvas-confetti errors when EndingModal
+// renders — which would trip the console assertions below. These tests are
+// about App's wiring, not the library.
+vi.mock('canvas-confetti', () => ({ default: vi.fn() }))
+
 // Holder for the per-test starting state. `vi.hoisted` is required: vi.mock
 // factories are hoisted above normal declarations, so a plain const would be
 // in the temporal dead zone when the factory runs.
@@ -86,6 +91,8 @@ let warnSpy
 
 beforeEach(() => {
   vi.useFakeTimers()
+  // EndingModal's reduced-motion guard calls matchMedia, which jsdom lacks.
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false })
   // B12 — any React warning (duplicate keys, act() violations, bad props) must
   // fail the test rather than scroll past in the output.
   errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

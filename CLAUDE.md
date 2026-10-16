@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Phase H3 done + 11 App integration tests (45 total); H4 pending the user's visual pass
+> Last updated: confetti burst on the ending modal (canvas-confetti, 51 tests); H4 pending the user's visual pass
 
 ---
 
@@ -377,9 +377,33 @@ Full design + rationale in the `🏁 PLANNED — End-game condition` section bel
   `line-height: 1.6` (tight line-height clips tone marks above/below the baseline)
   and `letter-spacing: normal` (the scale modal uses `0.1em`, which would detach
   Thai combining marks from their base character).
-- Verified by **5 component tests** in `EndingModal.test.jsx` (see Testing section):
+- Verified by **11 component tests** in `EndingModal.test.jsx` (see Testing section):
   empty render when `show=false`, title present when true, `onDismiss` fires exactly
-  once, button label, and no `5000` in rendered text. Full suite **34/34**.
+  once, button label, no `5000` in rendered text, plus the 6 confetti cases below.
+
+**Confetti celebration burst** (added 2026-10-16, on top of H2)
+- `canvas-confetti` — **the project's first runtime dependency besides React**
+  (~11 kB added to the bundle). User chose the library over a CSS-only effect.
+- One gold burst (`#fbbf24 / #fcd34d / #f59e0b / #fde68a`, matching the card) fired
+  from a `useEffect` in `EndingModal.jsx`. No change to the card markup, the
+  approved copy, or `ending-modal.css`.
+- ⚠️ **The dep array must be `[show]`.** `TICK` re-renders this modal **10×/sec**
+  while it is open, so an empty/missing dep array would fire confetti continuously
+  — a strobe, i.e. the exact class of bug already removed from `.universe:active`.
+  There is a regression test for this (5 forced re-renders → still 1 call).
+- ⚠️ **The reduced-motion guard must live in JS, not CSS.** The
+  `@media (prefers-reduced-motion: reduce)` block in `ending-modal.css` only stops
+  CSS animations and has **no effect on a canvas animation**. `EndingModal` checks
+  `window.matchMedia('(prefers-reduced-motion: reduce)').matches` before firing;
+  `disableForReducedMotion: true` is passed as well, but the explicit guard is the
+  one that is tested.
+- The hook sits **above** `if (!show) return null` — rules of hooks.
+- Browser-verified: canvas is `position: fixed`, `z-index: 100`,
+  **`pointer-events: none`** so it never blocks the Continue button.
+- 🐛 Reading pixels off that canvas throws *"Cannot get context from a canvas that
+  has transferred its control to offscreen"* — `canvas-confetti` renders in an
+  **OffscreenCanvas worker**. Its `width`/`height` also read `0` from the main
+  thread after transfer. Neither is a bug; don't chase them.
 
 **H3 — Wire into App** ([App.jsx](src/App.jsx)) ✅ DONE 2026-10-04
 - Rendered after `<ScaleUnlockModal>`, `show={state.pendingEnding}`,
@@ -634,7 +658,8 @@ Buy Volvox → +5 biomass/sec
 | State | `useReducer` in App.jsx |
 | Backend | None |
 | Database | None (in-memory only, resets on refresh) |
-| Testing | **Vitest** (added 2026-09-12, see below) |
+| Testing | **Vitest** + @testing-library/react + jsdom (see Testing section) |
+| Runtime deps | React, **canvas-confetti** (ending burst — the only non-React dep) |
 
 ---
 
@@ -644,7 +669,7 @@ The project has **Vitest** as a devDependency (added with H1, 2026-09-12), plus
 **@testing-library/react + jsdom** for component tests (added with H2, 2026-09-28).
 
 ```bash
-npm test            # run once (vitest run)  -> currently 45 tests in 3 files
+npm test            # run once (vitest run)  -> currently 51 tests in 3 files
 npm run test:watch  # re-run on file change
 ```
 
@@ -672,9 +697,12 @@ run in node.
 The test file builds state with its **own local `makeState()` factory** (not
 imported), so each case sets up exactly the situation it needs.
 
-**`src/components/EndingModal.test.jsx`** — 5 cases (jsdom env): renders empty when
-`show={false}`; shows the approved title when true; `onDismiss` called **exactly
-once** on click; button label is `Continue`; rendered text contains no `5000`.
+**`src/components/EndingModal.test.jsx`** — 11 cases (jsdom env). Markup/behaviour:
+renders empty when `show={false}`; shows the approved title when true; `onDismiss`
+called **exactly once** on click; button label is `Continue`; no `5000` in rendered
+text. Confetti: fires exactly once on open; never while hidden; **does not re-fire
+across re-renders**; **does not fire under `prefers-reduced-motion`**; modal still
+renders normally in that case; uses the gold palette rather than library defaults.
 
 **`src/App.test.jsx`** — 11 integration cases (jsdom env), added with H3. Drives the
 real `App` with `vi.useFakeTimers()` + `act()`, overriding **only** `initialState`
@@ -698,6 +726,13 @@ each test sets before `render()`. `gameState.js` was not modified to make this w
 ⚠️ **Every change to `gameReducer` must pass `npm test` before it is called done.**
 This is the only automated safety net the project has; the reducer is the single
 place game state changes, so a regression there breaks everything downstream.
+
+🐛 **Gotcha — jsdom has neither `canvas` nor `matchMedia`.** `EndingModal` uses
+both (confetti + the reduced-motion guard), so **every jsdom file that renders it**
+must `vi.mock('canvas-confetti', () => ({ default: vi.fn() }))` and stub
+`window.matchMedia`. Without the mock the real library errors on canvas and trips
+the console-silence assertions. Both `EndingModal.test.jsx` and `App.test.jsx` do
+this; a third file rendering the modal would need it too.
 
 🐛 **Gotcha — driving timers needs `IS_REACT_ACT_ENVIRONMENT`.** Advancing fake
 timers inside `act()` logs *"The current testing environment is not configured to
@@ -745,7 +780,7 @@ life-evolution/
 │   │   ├── UpgradeList.jsx      # upgrade cards + buy buttons
 │   │   ├── ScaleUnlockModal.jsx # popup on scale unlock
 │   │   ├── EndingModal.jsx      # H2 — completion modal (wired into App, H3)
-│   │   └── EndingModal.test.jsx # 5 component tests (jsdom via file pragma)
+│   │   └── EndingModal.test.jsx # 11 component tests (jsdom via file pragma)
 │   ├── game/
 │   │   ├── gameState.js         # initial state + reducer
 │   │   ├── gameState.test.js    # 29 reducer tests (node env)
