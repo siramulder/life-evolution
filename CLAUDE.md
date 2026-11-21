@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: confetti burst on the ending modal (canvas-confetti, 51 tests); H4 pending the user's visual pass
+> Last updated: Phase H complete (H1–H4 done); background-click decision recorded 2026-11-21; 51 tests passing
 
 ---
 
@@ -301,12 +301,13 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 ### 🏁 Phase H — End-game (ship the ending)
 
-> ⚠️ **IN PROGRESS — H1 done (2026-09-07), H2 done (2026-09-28), H3 done
-> (2026-10-04). H4 (verify) still pending.** The whole feature was built once on
-> 2026-08-28 and reverted at the user's request — the design was agreed, the
-> go-ahead to code never was. H1/H2/H3 were later rebuilt on explicit, separate
-> instructions. The ending is now reachable in-game: reducer → `pendingEnding` →
-> `EndingModal`. **H4 still requires its own explicit go-ahead.**
+> ✅ **PHASE H COMPLETE — 2026-10-19.** H1 reducer (2026-09-07) → H2 modal +
+> confetti (2026-09-28) → H3 wiring (2026-10-04) → H4 user visual pass
+> (2026-10-19). MVP 1.0 has a real, playable ending.
+>
+> History worth keeping: the whole feature was built once on 2026-08-28 and
+> **reverted at the user's request** — the design was agreed, the go-ahead to code
+> never was. Each of H1–H4 was then rebuilt only on its own explicit instruction.
 
 **Goal**: MVP 1.0 gets a real finish. Reach **5,000 biomass while at Scale 3** →
 one-time ending modal → dismiss → **game continues completely normally**.
@@ -324,6 +325,14 @@ Full design + rationale in the `🏁 PLANNED — End-game condition` section bel
   attempt invented "You did it 🎉" / "Keep Playing"; that copy is dead.
 - **Visual treatment** → distinct: its own `ending-modal.css`, gold/amber vs the
   scale modal's blue-green, card 1.4× larger, own entrance + slow glow animation.
+- **Background clicks while the ending modal is open** (decided 2026-11-21) → **keep
+  as is, no change.** Clicks on the background earn nothing; passive income keeps
+  running. Reasons:
+  - the modal blocks clicks so the player cannot miss the ending message by
+    clicking straight through it;
+  - passive income (`TICK`, a timer) keeps accruing, so the player loses nothing
+    while it is open;
+  - it matches `ScaleUnlockModal` exactly — verified, not assumed (see below).
 
 #### Tasks
 
@@ -418,11 +427,45 @@ Full design + rationale in the `🏁 PLANNED — End-game condition` section bel
 3. Buy an upgrade *after* the ending → purchase still works.
 4. Stay well above 5,000 and spend down/up → modal never reappears.
 
-✅ **All four are now covered by automated integration tests** in
-`src/App.test.jsx` (2026-10-10): B2 / B3+B5 / B7 / B8 respectively, driving the
-real App with fake timers. H4 itself stays **pending the user's own visual
-pass** — the tests prove the state machine, not that the gold card actually
-looks right on screen.
+✅ **DONE 2026-10-19 — user visual pass, all checks passed.** Two layers of proof:
+- **Automated** (`src/App.test.jsx`, 2026-10-10): items 1–4 above are cases
+  B2 / B3+B5 / B7 / B8, driving the real App with fake timers.
+- **By eye in a real browser** (the user): the 4 items above, plus what tests
+  cannot judge — the gold card reads as distinct from the blue-green
+  *Scale Unlocked!* modal; the Thai title `ถึงเป้าหมายแล้ว!!` renders cleanly with
+  its tone marks; the confetti burst looks right; reduced-motion behaviour.
+- How the pass was staged: `initialState` was temporarily seeded to
+  `biomass 4900 / perSec 20 / currentScale 3 / unlockedScales [1,2,3]` (each line
+  tagged `// TEMP: H4`), then reverted with `git checkout` — `gameState.js` verified
+  byte-identical to HEAD afterwards. ⚠️ While seeded, **`gameState.test.js` drops
+  to 50/51** by design: `still has every pre-existing field` asserts those exact
+  four fields. That is the expected cost of any future seeded visual pass, not a
+  regression — `App.test.jsx` is immune because it mocks `initialState`.
+
+**Clicking the background while the ending modal is open — verified behaviour**
+(2026-10-19, hit-tested at 1280×720, five points at the corners and top-centre):
+- **Clicks do NOT earn biomass.** All five points hit `.ending-overlay`; none reach
+  `.universe`. Control with no modal: all five reach `.universe`. The overlay is
+  full-viewport, `z-index: 100`, `pointer-events: auto`, so it absorbs every click.
+- **Passive income keeps running** — `TICK` is a timer, not a click.
+- The confetti canvas is `pointer-events: none`, so it never blocks anything.
+- ✅ **Decision recorded** in *Resolved* above: keep as is.
+- **Parity with `ScaleUnlockModal` — verified 2026-11-21 on the real modal** (not
+  injected markup), viewport 1280×720:
+  - same overlay rule in both stylesheets: `position: fixed`, full viewport,
+    `z-index: 100`, no `pointer-events` override (so `auto`);
+  - hit-test at the same 5 points → all land on `.modal-overlay`, none on `.universe`;
+  - a **real click** (not scripted) on the background → **+0 biomass, no `+N`
+    bubble**; control after dismissing, same spot → **+1 biomass, 1 bubble**, which
+    proves the click itself was delivered;
+  - passive income kept rising while the modal stayed open (111.4 → 116.9 at
+    +0.2/sec).
+  - ⚠️ If either overlay ever gains `pointer-events: none` or shrinks below full
+    viewport, background clicks would start earning biomass for that modal only and
+    the two would stop matching. Change both together or neither.
+- 🐛 Hit-testing gotcha: the preview pane often reports a **0×0 viewport** when
+  hidden, so `document.elementFromPoint` returns `null` and every probe "passes"
+  vacuously. Set a real size (`resize_window`) and run a no-modal control first.
 
 #### Cross-dependencies
 - 🔗 **Save/load (backlog #4) must persist `hasEnded`** — otherwise every reload
@@ -609,9 +652,9 @@ not eyeball checks; Vitest has been in the project since 2026-09-12 (see Testing
 
 ### Phase F: Polish & End-to-End Test
 - [x] F1 — Play full loop 0 → Scale 3 ✅ VERIFIED (no bugs found; smooth progression through all scales + all upgrades functional)
-- [ ] F2 — Verify all 3 upgrade cost scaling formulas
-- [ ] F3 — Modal must not re-trigger after dismiss (even if biomass stays above threshold)
-- [ ] F4 — Final check: no console errors or warnings
+- [x] F2 — Verify all 3 upgrade cost scaling formulas ✅ re-verified 2026-10-19: real reducer, all 3 upgrades × owned 0/1/2/5/10 = 15/15 match `baseCost × multiplier^owned` (the Vitest suite only covers Amino Acids explicitly)
+- [x] F3 — Modal must not re-trigger after dismiss (even if biomass stays above threshold) ✅ re-verified 2026-10-19: dismissed at 100 and at 1000, held above each for 300 ticks — never re-raised, `unlockedScales` never duplicated (6/6)
+- [x] F4 — Final check: no console errors or warnings ✅ under normal play; `App.test.jsx` asserts zero `console.error`/`warn` across all 11 cases. ⚠️ **One known exception:** the OPEN `+N` bubble key-collision bug (see Known gotchas) still logs *"Encountered two children with the same key"* under **rapid** clicking. Not new, not fixed.
 
 ---
 
