@@ -1,7 +1,7 @@
 # Life Evolution — Project Memory
 
 > Claude Code reads this file automatically every session.
-> Last updated: Phase H complete (H1–H4 done); background-click decision recorded 2026-11-21; 51 tests passing
+> Last updated: +N bubble key-collision bug fixed (backlog #1) 2026-11-24; Phase H complete (H1–H4 done); 52 tests passing
 
 ---
 
@@ -145,7 +145,7 @@ Full requirements: see `PRD_MVP_1.0_Life_Evolution.md` (in user's Downloads).
 
 **Phase C3 — Click feedback (floating +N bubbles)**
 - `App.jsx` — added `useState([])` for `floatingNumbers` (transient UI, separate from useReducer game state)
-- `handleClick(e)` — reads `e.clientX/clientY`, spawns bubble `{ id: Date.now()+Math.random(), x, y, value: perClick }`, `setTimeout(600ms)` removes it via `filter(b.id !== bubble.id)`
+- `handleClick(e)` — reads `e.clientX/clientY`, spawns bubble `{ id, x, y, value: perClick }` (id originally `Date.now()+Math.random()`, which collided — now a `useRef` counter, see Known gotchas), `setTimeout(600ms)` removes it via `filter(b.id !== bubble.id)`
 - Renders bubbles with `.map()` + `key={b.id}`, positioned `style={{ left: x, top: y }}`
 - `Universe.jsx` — `onClick={(e) => onClick(e)}` forwards the event to App
 - `src/styles/floating.css` — `.floating-number` fixed position, `pointer-events: none`, `transform: translate(-50%,-50%)` centers bubble on cursor; `@keyframes floatUp` (opacity 1→0, translateY 0→-50px), `animation: floatUp 0.6s ease-out forwards`
@@ -487,7 +487,7 @@ Full design + rationale in the `🏁 PLANNED — End-game condition` section bel
 
 Shortlist agreed with the user. Ordered by recommendation, not priority-of-value:
 
-1. **Fix the `+N` bubble key collision** — one line, clears the open bug below (`useRef(0)` counter instead of `Date.now() + Math.random()`).
+1. ~~**Fix the `+N` bubble key collision**~~ — ✅ **DONE 2026-11-24** (`useRef(0)` counter instead of `Date.now() + Math.random()`; regression test B12b). See Known gotchas.
 2. **Show `perClick` in Stats** — real information gap: buying Amoeba 5× makes each click worth 6, and **nothing on screen ever says so**. `Stats` shows biomass + `perSec` only.
 3. **Compact number formatting** — SPEC AGREED, NOT YET BUILT. See below. (The ending itself is **Phase H** above, not part of this backlog.)
 4. **Save/load to localStorage** — highest player value; a refresh currently wipes everything ([gameState.js](src/game/gameState.js) says so in its header comment). Prerequisite worth doing first: `perSec`/`perClick` are *stored* in state but also *derivable* from `ownedUpgrades`, so a save should persist only `biomass` + `ownedUpgrades` + `unlockedScales` and recompute the rest — otherwise a future `increment` tweak leaves old saves inconsistent.
@@ -597,13 +597,15 @@ not eyeball checks; Vitest has been in the project since 2026-09-12 (see Testing
 
 ## Known gotchas / lessons learned
 
-### 🐛 OPEN BUG — floating "+N" bubble ids collide (`Date.now() + Math.random()`)
-- `App.jsx` builds each click bubble's key as `id: Date.now() + Math.random()`. React logs *"Encountered two children with the same key"* when clicking fast.
+### 🐛 FIXED (2026-11-24) — floating "+N" bubble ids collided (`Date.now() + Math.random()`)
+- `App.jsx` used to build each click bubble's key as `id: Date.now() + Math.random()`. React logged *"Encountered two children with the same key"* when clicking fast.
 - Cause: `Date.now()` is ~1.78×10¹² (13 digits) and float64 holds ~16 significant digits, so adding a 0–1 fraction leaves only ~2–3 usable fractional digits — the random part gets truncated away.
 - Measured: **500 ids generated → 477 unique (23 collisions, ~4.6%)**.
-- Harmless today (bubbles are transient decoration) but it's a real React key violation; duplicate keys mean bubbles can be duplicated or omitted.
-- Fix when convenient: a monotonic counter (`useRef(0)`, `nextId.current++`) instead of timestamp+random.
-- **NOT introduced by the SVG amino work** — pre-existing since Phase C3, just surfaced by rapid automated clicking during verification.
+- Worse than a console warning: with two bubbles sharing an id, one removal timeout's `filter` deleted **both**, and React could leave **orphaned nodes stuck on screen** (seen in-browser as bubbles that never disappeared).
+- **Fix**: `const nextBubbleId = useRef(0)` → `id: nextBubbleId.current++`. A ref, not state — bumping it must not re-render, and it must survive re-renders. ⚠️ Do not go back to timestamp ids; a comment in `App.jsx` says so too.
+- **Test-first**: `App.test.jsx` B12b (200 rapid clicks → 200 bubbles, 0 left after 700ms, zero console errors). It **failed on the old code with 350 duplicate-key errors**, passes now.
+- **Browser check**: after hooking `console.error`, 300 rapid clicks → biomass +300 exactly, 0 bubbles left, **0 new errors**. Duplicate-key errors still sitting in an old console buffer carry the old timestamp-format key (e.g. `1795252636542.7888`) and pre-date the fix — not a regression.
+- Was pre-existing since Phase C3; surfaced by rapid automated clicking during the SVG amino verification.
 
 ### Dev server must be running to view the game
 - `ERR_CONNECTION_REFUSED` at `localhost:5173` does NOT mean a code error — it means no `npm run dev` process is running.
@@ -654,7 +656,7 @@ not eyeball checks; Vitest has been in the project since 2026-09-12 (see Testing
 - [x] F1 — Play full loop 0 → Scale 3 ✅ VERIFIED (no bugs found; smooth progression through all scales + all upgrades functional)
 - [x] F2 — Verify all 3 upgrade cost scaling formulas ✅ re-verified 2026-10-19: real reducer, all 3 upgrades × owned 0/1/2/5/10 = 15/15 match `baseCost × multiplier^owned` (the Vitest suite only covers Amino Acids explicitly)
 - [x] F3 — Modal must not re-trigger after dismiss (even if biomass stays above threshold) ✅ re-verified 2026-10-19: dismissed at 100 and at 1000, held above each for 300 ticks — never re-raised, `unlockedScales` never duplicated (6/6)
-- [x] F4 — Final check: no console errors or warnings ✅ under normal play; `App.test.jsx` asserts zero `console.error`/`warn` across all 11 cases. ⚠️ **One known exception:** the OPEN `+N` bubble key-collision bug (see Known gotchas) still logs *"Encountered two children with the same key"* under **rapid** clicking. Not new, not fixed.
+- [x] F4 — Final check: no console errors or warnings ✅ under normal play; `App.test.jsx` asserts zero `console.error`/`warn` across all 12 cases. ~~One known exception: the `+N` bubble key-collision bug under rapid clicking~~ — **fixed 2026-11-24** (see Known gotchas); rapid clicking is now covered by B12b with zero console output.
 
 ---
 
@@ -712,7 +714,7 @@ The project has **Vitest** as a devDependency (added with H1, 2026-09-12), plus
 **@testing-library/react + jsdom** for component tests (added with H2, 2026-09-28).
 
 ```bash
-npm test            # run once (vitest run)  -> currently 51 tests in 3 files
+npm test            # run once (vitest run)  -> currently 52 tests in 3 files
 npm run test:watch  # re-run on file change
 ```
 
@@ -747,7 +749,7 @@ text. Confetti: fires exactly once on open; never while hidden; **does not re-fi
 across re-renders**; **does not fire under `prefers-reduced-motion`**; modal still
 renders normally in that case; uses the gold palette rather than library defaults.
 
-**`src/App.test.jsx`** — 11 integration cases (jsdom env), added with H3. Drives the
+**`src/App.test.jsx`** — 12 integration cases (jsdom env), added with H3 (+ B12b for the bubble-id fix). Drives the
 real `App` with `vi.useFakeTimers()` + `act()`, overriding **only** `initialState`
 via `vi.mock` so a run can start mid-game:
 
@@ -759,6 +761,7 @@ via `vi.mock` so a run can start mid-game:
 | **no re-fire** | spend below 5,000 then idle back over → stays dismissed |
 | scale modal intact | still fires at 100 and dismisses |
 | invariants | never two modals mounted at once; no `window.__dispatch`/`__state`; **zero `console.error`/`console.warn` in every case** |
+| **+N bubbles** (B12b) | 200 rapid clicks → 200 distinct bubbles, all removed after 600ms — regression for the duplicate-key bug |
 
 ⚠️ **`vi.mock` overrides `initialState` through a getter + `vi.hoisted`**, not a
 plain object. `vi.mock` factories are hoisted above normal declarations, so a
@@ -809,7 +812,7 @@ An earlier ad-hoc node harness had to copy the modules to a scratch dir with
 life-evolution/
 ├── src/
 │   ├── App.jsx
-│   ├── App.test.jsx             # 11 integration tests (jsdom via file pragma)
+│   ├── App.test.jsx             # 12 integration tests (jsdom via file pragma)
 │   ├── main.jsx
 │   ├── components/
 │   │   ├── Background.jsx       # ambient bubbles + particles; per-scale gradient

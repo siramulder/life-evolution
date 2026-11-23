@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useState } from 'react'
+import { useReducer, useEffect, useState, useRef } from 'react'
 import { initialState, gameReducer } from './game/gameState'
 import { scales } from './game/scales'
 import { upgrades } from './game/upgrades'
@@ -33,6 +33,14 @@ function App() {
   // Transient click animations — NOT game state, just short-lived UI bubbles.
   const [floatingNumbers, setFloatingNumbers] = useState([])
 
+  // Monotonic id source for those bubbles. A ref, not state: bumping it must not
+  // cause a re-render, and it must survive re-renders without resetting.
+  // ⚠️ Do not go back to `Date.now() + Math.random()`. Date.now() is ~1.8e12, so
+  // float64 keeps only ~3 fractional digits of the random part — ids collided on
+  // rapid clicks (~4.6% of 500), React logged duplicate-key errors, and a removal
+  // timeout could delete two bubbles at once, leaving orphaned nodes on screen.
+  const nextBubbleId = useRef(0)
+
   useEffect(() => {
     const interval = setInterval(() => dispatch({ type: 'TICK' }), 100)
     return () => clearInterval(interval)
@@ -41,7 +49,7 @@ function App() {
   const handleClick = (e) => {
     // Spawn a floating "+N" bubble at the cursor position.
     const bubble = {
-      id: Date.now() + Math.random(), // unique even on rapid clicks
+      id: nextBubbleId.current++, // unique for the component's lifetime
       x: e.clientX,
       y: e.clientY,
       value: state.perClick,

@@ -178,9 +178,8 @@ describe('App — ending modal wiring (H3)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
 
     const before = biomass()
-    // One click only: the +N bubble id is Date.now()+Math.random(), and under
-    // fake timers Date.now() is frozen, so repeated clicks risk the known
-    // duplicate-key warning and would trip the console assertion in afterEach.
+    // A single click is enough to prove clicking earns after dismissal; rapid
+    // clicking and bubble-key uniqueness are covered by B12b below.
     fireEvent.click(document.querySelector('.universe'))
     expect(biomass()).toBeGreaterThan(before)
   })
@@ -273,5 +272,29 @@ describe('App — ending modal wiring (H3)', () => {
     render(<App />)
     expect(window.__dispatch).toBeUndefined()
     expect(window.__state).toBeUndefined()
+  })
+})
+
+describe('App — +N click bubbles', () => {
+  // Regression for the duplicate-key bug: ids were Date.now() + Math.random().
+  // Date.now() is ~1.8e12, so float64 keeps only ~3 fractional digits of the
+  // random part, and under fake timers Date.now() is frozen too — rapid clicks
+  // collide. React then logs "Encountered two children with the same key"
+  // (caught by the console assertion in afterEach) and can orphan DOM nodes.
+  it('B12b: 200 rapid clicks give 200 distinct bubbles, all cleaned up', async () => {
+    h.initial = atScale3({ biomass: 0 })
+    render(<App />)
+    const universe = document.querySelector('.universe')
+
+    for (let i = 0; i < 200; i++) fireEvent.click(universe)
+
+    // One bubble per click — none merged, none dropped.
+    expect(document.querySelectorAll('.floating-number').length).toBe(200)
+
+    // Each removal targets its own bubble: after the 600ms lifetime, all gone.
+    // (With colliding ids, one timeout's filter removed BOTH bubbles and React
+    // could leave orphaned nodes behind — observed as stuck bubbles in-browser.)
+    await advance(700)
+    expect(document.querySelectorAll('.floating-number').length).toBe(0)
   })
 })
